@@ -91,4 +91,28 @@ class AuthProvider with ChangeNotifier {
       throw e;
     }
   }
+  // --- Registrar y luego iniciar sesión automáticamente ---
+  Future<void> register({
+    required String nombreUsuario,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      // 1. Llama a la API para crear el nuevo usuario.
+      await _apiService.register(
+        nombreUsuario: nombreUsuario,
+        email: email,
+        password: password,
+      );
+
+      // 2. Si el registro fue exitoso, llama al método de login para
+      //    iniciar sesión automáticamente y obtener el token.
+      await login(nombreUsuario, password);
+
+    } catch (e) {
+      // Si hay un error (ej. usuario ya existe), lo relanzamos para que la UI lo muestre.
+      print('Error en el registro: $e');
+      throw e;
+    }
+  }
 }

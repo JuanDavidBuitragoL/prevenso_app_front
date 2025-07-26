@@ -1,31 +1,51 @@
-// -------------------------------------------------------------------
-// features/rates/presentation/widgets/rate_card.dart
-// El widget que representa una tarjeta de tarifa individual en la cuadrícula.
+// =============================================================================
+// ARCHIVO: features/rates/presentation/widgets/rate_card.dart (VERSIÓN FINAL)
+// FUNCIÓN:   Componente visual para una tarjeta de tarifa. Ahora es más simple
+//            y solo se encarga de mostrar datos y ejecutar una acción.
+// =============================================================================
 
 import 'package:flutter/material.dart';
-import '../pages/rate_detail_page.dart';
-import '../pages/rates_page.dart';
+import 'package:intl/intl.dart';
+import '../../domain/entities/rate_model.dart';
+
+// Lógica para asignar colores e íconos dinámicamente
+Color _getColorForService(String serviceName) {
+  final hash = serviceName.hashCode;
+  final colors = [
+    const Color(0xFFFFF3E0), const Color(0xFFE3F2FD), const Color(0xFFE8F5E9),
+    const Color(0xFFF3E5F5), const Color(0xFFFFEBEE), const Color(0xFFE0F7FA)
+  ];
+  return colors[hash % colors.length];
+}
+
+IconData _getIconForService(String serviceName) {
+  final lowerCaseName = serviceName.toLowerCase();
+  if (lowerCaseName.contains('vigía')) return Icons.security_outlined;
+  if (lowerCaseName.contains('supervisor')) return Icons.supervisor_account_outlined;
+  if (lowerCaseName.contains('estrés')) return Icons.self_improvement_outlined;
+  if (lowerCaseName.contains('auxilios')) return Icons.medical_services_outlined;
+  if (lowerCaseName.contains('extintores')) return Icons.fire_extinguisher_outlined;
+  return Icons.work_outline;
+}
 
 class RateCard extends StatelessWidget {
-  final Rate rate;
+  final RateModel rate;
+  final VoidCallback onTap; // Acepta la función de navegación
 
-  const RateCard({super.key, required this.rate});
+  const RateCard({super.key, required this.rate, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final currencyFormatter = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+    final formattedPrice = currencyFormatter.format(double.parse(rate.costo));
+
     return InkWell(
-      onTap: () {
-        // Navega a la página de detalles, pasando la información de la tarifa seleccionada.
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => RateDetailPage(rate: rate)),
-        );
-      },
-      borderRadius: BorderRadius.circular(20), // Para que el efecto ripple coincida con el borde
+      onTap: onTap, // Llama a la función de navegación al ser presionado
+      borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: rate.color,
+          color: _getColorForService(rate.nombreServicio),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
@@ -35,20 +55,26 @@ class RateCard extends StatelessWidget {
             CircleAvatar(
               radius: 25,
               backgroundColor: Colors.white.withOpacity(0.7),
-              child: Icon(rate.icon, size: 28, color: const Color(0xFF00C6AD)),
+              child: Icon(
+                _getIconForService(rate.nombreServicio),
+                size: 28,
+                color: const Color(0xFF00C6AD),
+              ),
             ),
             const Spacer(),
             Text(
-              rate.title,
+              rate.nombreServicio,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
-              '\$${rate.price}',
+              formattedPrice,
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w900,

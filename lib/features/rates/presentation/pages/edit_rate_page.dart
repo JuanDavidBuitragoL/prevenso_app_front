@@ -3,10 +3,14 @@
 // La pantalla para editar los detalles de una tarifa existente.
 
 import 'package:flutter/material.dart';
-import 'rates_page.dart'; // Importamos la clase Rate
+import 'package:provider/provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../core/services/api_service.dart';
+import '../../domain/entities/rate_model.dart';
 
 class EditRatePage extends StatefulWidget {
-  final Rate rate;
+  // La página ahora recibe el RateModel, que es el tipo de dato correcto
+  final RateModel rate;
 
   const EditRatePage({super.key, required this.rate});
 
@@ -15,37 +19,78 @@ class EditRatePage extends StatefulWidget {
 }
 
 class _EditRatePageState extends State<EditRatePage> {
+  final _formKey = GlobalKey<FormState>();
+  final ApiService _apiService = ApiService();
+
   // Controladores para los campos de texto
   late TextEditingController _nameController;
-  late TextEditingController _durationController;
+  late TextEditingController _cityController;
   late TextEditingController _valueController;
 
-  final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     // Inicializamos los controladores con los valores actuales de la tarifa
-    _nameController = TextEditingController(text: widget.rate.title);
-    _durationController = TextEditingController(text: '16 horas'); // Valor de ejemplo
-    _valueController = TextEditingController(text: widget.rate.price);
+    _nameController = TextEditingController(text: widget.rate.nombreServicio);
+    _cityController = TextEditingController(text: widget.rate.ciudad);
+    _valueController = TextEditingController(text: widget.rate.costo);
   }
 
   @override
   void dispose() {
     // Limpiamos los controladores para liberar memoria
     _nameController.dispose();
-    _durationController.dispose();
+    _cityController.dispose();
     _valueController.dispose();
     super.dispose();
   }
 
-  void _saveChanges() {
-    if (_formKey.currentState!.validate()) {
-      // TODO: Implementar la lógica para guardar los cambios en la API
-      print('Cambios guardados (simulado)');
-      // Regresa a la pantalla anterior después de guardar
-      Navigator.of(context).pop();
+  // --- Lógica para guardar los cambios en el backend ---
+  Future<void> _saveChanges() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error de autenticación'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    // Creamos el mapa de datos solo con los campos que pueden cambiar
+    final Map<String, dynamic> dataToUpdate = {
+      'ciudad': _cityController.text.trim(),
+      'costo': double.tryParse(_valueController.text.trim()) ?? 0.0,
+    };
+
+    try {
+      await _apiService.updateRate(
+        rateId: widget.rate.id,
+        data: dataToUpdate,
+        token: authProvider.token!,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tarifa actualizada con éxito'), backgroundColor: Colors.green),
+        );
+        // Regresa a la pantalla anterior después de guardar
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -53,10 +98,7 @@ class _EditRatePageState extends State<EditRatePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset(
-          'assets/images/logo-inicio.png',
-          height: 40,
-        ),
+        title: Image.asset('assets/images/logo-inicio.png', height: 40),
         backgroundColor: Colors.white,
         elevation: 1.0,
       ),
@@ -73,10 +115,11 @@ class _EditRatePageState extends State<EditRatePage> {
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 30),
-                // Campos de formulario editables
-                _buildTextField(label: 'Nombre', controller: _nameController),
+                // El nombre del servicio no es editable, se muestra como información
+                _buildInfoField(label: 'Nombre del Servicio', value: _nameController.text),
                 const SizedBox(height: 20),
-                _buildTextField(label: 'Duración', controller: _durationController),
+                // La ciudad y el valor sí son editables
+                _buildTextField(label: 'Ciudad', controller: _cityController),
                 const SizedBox(height: 20),
                 _buildTextField(
                   label: 'Valor',
@@ -89,7 +132,7 @@ class _EditRatePageState extends State<EditRatePage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _saveChanges,
+                    onPressed: _isLoading ? null : _saveChanges,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF27AE60), // Verde
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -97,20 +140,20 @@ class _EditRatePageState extends State<EditRatePage> {
                         borderRadius: BorderRadius.circular(30.0),
                       ),
                     ),
-                    child: const Text('Guardar cambios', style: TextStyle(fontSize: 16)),
+                    child: _isLoading
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('Guardar cambios', style: TextStyle(fontSize: 16)),
                   ),
                 ),
                 const SizedBox(height: 16),
                 // Botón de Cancelar
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Simplemente regresa a la pantalla anterior sin guardar
-                      Navigator.of(context).pop();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2F54EB), // Azul
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.grey.shade700,
+                      side: BorderSide(color: Colors.grey.shade300, width: 1.5),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30.0),
@@ -127,7 +170,7 @@ class _EditRatePageState extends State<EditRatePage> {
     );
   }
 
-  // Widget helper para construir los campos de texto y no repetir código
+  // Widget helper para campos de texto editables
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
@@ -137,26 +180,51 @@ class _EditRatePageState extends State<EditRatePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.black54, fontSize: 16),
-        ),
+        Text(label, style: const TextStyle(color: Colors.black54, fontSize: 16)),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
           decoration: InputDecoration(
             prefixText: prefixText,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
           ),
           validator: (value) {
-            if (value == null || value.isEmpty) {
+            if (value == null || value.trim().isEmpty) {
               return 'Este campo no puede estar vacío';
+            }
+            if (keyboardType == TextInputType.number && double.tryParse(value) == null) {
+              return 'Por favor, ingresa un número válido';
             }
             return null;
           },
+        ),
+      ],
+    );
+  }
+
+  // Widget helper para campos de información no editables
+  Widget _buildInfoField({required String label, required String value}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.black54, fontSize: 16)),
+        const SizedBox(height: 8),
+        TextFormField(
+          initialValue: value,
+          readOnly: true,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+          ),
         ),
       ],
     );

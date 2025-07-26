@@ -1,11 +1,11 @@
 // -------------------------------------------------------------------
 // features/home/presentation/widgets/action_buttons_grid.dart
 // --- ARCHIVO MODIFICADO ---
-// Se asegura que la navegación a la página de tarifas sea correcta.
+// Se añade el nuevo botón "Editar servicios" a la cuadrícula.
 
 import 'package:flutter/material.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
-import '../../../rates/presentation/pages/rates_page.dart'; // Asegúrate de tener esta importación
+import '../../../rates/presentation/pages/rates_page.dart';
 
 class ActionButtonsGrid extends StatelessWidget {
   const ActionButtonsGrid({super.key});
@@ -20,28 +20,42 @@ class ActionButtonsGrid extends StatelessWidget {
       crossAxisSpacing: 10,
       childAspectRatio: 0.8,
       children: [
+        // Botón Configurar Perfil
         GestureDetector(
           onTap: () {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage()));
           },
           child: const _ActionButton(icon: Icons.person_outline, label: 'Configurar perfil', color: Color(0xFF8B93FF)),
         ),
-        // --- CORRECCIÓN EN LA NAVEGACIÓN ---
+        // Botón Editar Tarifas
         GestureDetector(
           onTap: () {
-            // Se navega a la nueva página independiente de Tarifas.
+            // Esta navegación debería cambiar el índice del MainScreen o usar un gestor de estado.
+            // Por ahora, lo dejamos como una navegación a una página independiente.
             Navigator.push(context, MaterialPageRoute(builder: (context) => const RatesPage()));
           },
           child: const _ActionButton(icon: Icons.edit_outlined, label: 'Editar tarifas', color: Color(0xFF88E2D6)),
         ),
+        // Botón Crear Cotización
         const _ActionButton(icon: Icons.add_box_outlined, label: 'Crear cotización', color: Colors.white, iconColor: Colors.black, hasBorder: true),
+
+        // Botón Editar Clientes
         const _ActionButton(icon: Icons.business_outlined, label: 'Editar Clientes', color: Color(0xFFE2A9A9)),
+
+        // --- NUEVO BOTÓN AÑADIDO ---
+        GestureDetector(
+          onTap: () {
+            // TODO: Crear y navegar a la página de Editar Servicios
+            print('Navegar a la página de Editar Servicios');
+          },
+          child: const _ActionButton(icon: Icons.design_services_outlined, label: 'Editar servicios', color: Color(0xFFC5A9E2)),
+        ),
       ],
     );
   }
 }
 
-// El widget _ActionButton se mantiene igual, solo se muestra aquí por contexto.
+// El widget _ActionButton se mantiene igual.
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;

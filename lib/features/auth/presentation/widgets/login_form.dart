@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/services/api_service.dart'; // Necesario para _fetchUsers
 import '../../../../core/theme/app_theme.dart';
 import '../../../main_screen.dart';
+import '../pages/register_page.dart';
 import '../providers/auth_provider.dart';
 
 class LoginForm extends StatefulWidget {
@@ -199,8 +200,11 @@ class _LoginFormState extends State<LoginForm> {
                         ),
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
-                            // TODO: Implementar navegación a la página de registro
-                            print('Navegar a la página de registro');
+                            // Navega a la pantalla de registro
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const RegisterPage()),
+                            );
                           },
                       ),
                     ],
