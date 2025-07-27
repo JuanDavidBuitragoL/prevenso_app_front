@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
 import '../../../rates/presentation/pages/rates_page.dart';
+import '../../../services/presentation/pages/services_page.dart';
 
 class ActionButtonsGrid extends StatelessWidget {
   const ActionButtonsGrid({super.key});
@@ -42,11 +43,13 @@ class ActionButtonsGrid extends StatelessWidget {
         // Botón Editar Clientes
         const _ActionButton(icon: Icons.business_outlined, label: 'Editar Clientes', color: Color(0xFFE2A9A9)),
 
-        // --- NUEVO BOTÓN AÑADIDO ---
         GestureDetector(
           onTap: () {
-            // TODO: Crear y navegar a la página de Editar Servicios
-            print('Navegar a la página de Editar Servicios');
+            // Navega a la nueva página de Servicios
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ServicesPage()),
+            );
           },
           child: const _ActionButton(icon: Icons.design_services_outlined, label: 'Editar servicios', color: Color(0xFFC5A9E2)),
         ),
