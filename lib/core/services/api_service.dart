@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../features/auth/domain/entities/user_model.dart';
+import '../../features/clients/domain/entities/client_model.dart';
 import '../../features/rates/domain/entities/rate_model.dart';
 import '../../features/services/domain/entities/service_model.dart';
 
@@ -222,22 +223,6 @@ class ApiService {
       throw Exception(errorBody['message'] ?? 'Error al actualizar la tarifa');
     }
   }
-  // --- Obtener la lista de todos los servicios para el dropdown ---
-  Future<List<ServiceModel>> getServices(String token) async {
-    final response = await http.get(
-      Uri.parse('$_baseUrl/servicios'),
-      headers: <String, String>{
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((json) => ServiceModel.fromJson(json)).toList();
-    } else {
-      throw Exception('Error al cargar los servicios');
-    }
-  }
 
   // --- Crear una nueva tarifa ---
   Future<RateModel> createRate({
@@ -264,6 +249,167 @@ class ApiService {
     } else {
       final errorBody = jsonDecode(response.body);
       throw Exception(errorBody['message'] ?? 'Error al crear la tarifa');
+    }
+  }
+
+  // --- Obtener la lista de todos los servicios ---
+  Future<List<ServiceModel>> getServices(String token) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/servicios'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => ServiceModel.fromJson(json)).toList();
+    } else {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(errorBody['message'] ?? 'Error al cargar los servicios');
+    }
+  }
+  // --- Actualizar un servicio por su ID ---
+  Future<ServiceModel> updateService({
+    required int serviceId,
+    required Map<String, dynamic> data,
+    required String token,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$_baseUrl/servicios/$serviceId'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 200) {
+      return ServiceModel.fromJson(jsonDecode(response.body));
+    } else {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(errorBody['message'] ?? 'Error al actualizar el servicio');
+    }
+  }
+  // --- Crear un nuevo servicio ---
+  Future<ServiceModel> createService({
+    required String nombre,
+    required String tipo,
+    String? duracion,
+    required String token,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/servicios'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'nombre_servicio': nombre,
+        'tipo_servicio': tipo,
+        'duracion': duracion,
+      }),
+    );
+
+    if (response.statusCode == 201) {
+      return ServiceModel.fromJson(jsonDecode(response.body));
+    } else {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(errorBody['message'] ?? 'Error al crear el servicio');
+    }
+  }
+  // --- Eliminar un servicio por su ID ---
+  Future<void> deleteService(int serviceId, String token) async {
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/servicios/$serviceId'),
+      headers: <String, String>{
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode != 204) { // 204 No Content es éxito
+      if (response.body.isNotEmpty) {
+        final errorBody = jsonDecode(response.body);
+        throw Exception(errorBody['message'] ?? 'Error al eliminar el servicio');
+      } else {
+        throw Exception('Error al eliminar el servicio. Código: ${response.statusCode}');
+      }
+    }
+  }
+  // --- Obtener la lista de todos los clientes ---
+  Future<List<ClientModel>> getClients(String token) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/clientes'),
+      headers: <String, String>{
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => ClientModel.fromJson(json)).toList();
+    } else {
+      throw Exception('Error al cargar los clientes');
+    }
+
+  }
+
+  // --- Eliminar un cliente por su ID ---
+  Future<void> deleteClient(int clientId, String token) async {
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/clientes/$clientId'),
+      headers: <String, String>{
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode != 204) {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(errorBody['message'] ?? 'Error al eliminar el cliente');
+    }
+  }
+  // --- Crear un nuevo cliente ---
+  Future<ClientModel> createClient({
+    required Map<String, dynamic> data,
+    required String token,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/clientes'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 201) {
+      return ClientModel.fromJson(jsonDecode(response.body));
+    } else {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(errorBody['message'] ?? 'Error al crear el cliente');
+    }
+  }
+  // --- Actualizar un cliente existente ---
+  Future<ClientModel> updateClient({
+    required int clientId,
+    required Map<String, dynamic> data,
+    required String token,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$_baseUrl/clientes/$clientId'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 200) {
+      return ClientModel.fromJson(jsonDecode(response.body));
+    } else {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(errorBody['message'] ?? 'Error al actualizar el cliente');
     }
   }
 }

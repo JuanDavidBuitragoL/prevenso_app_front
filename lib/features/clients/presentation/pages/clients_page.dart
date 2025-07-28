@@ -1,54 +1,50 @@
 // =============================================================================
-// ARCHIVO: lib/features/services/presentation/pages/services_page.dart (VERSIÓN FINAL)
-// FUNCIÓN:   Pantalla que lista los servicios, maneja la carga de datos,
-//            el refresco y ahora también el filtrado en tiempo real.
+// ARCHIVO: lib/features/clients/presentation/pages/clients_page.dart (VERSIÓN FINAL)
+// FUNCIÓN:   Pantalla principal que lista todos los clientes, maneja la carga
+//            de datos, el refresco automático y la búsqueda en tiempo real.
 // =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/services/api_service.dart';
-import '../../domain/entities/service_model.dart';
-import '../widgets/service_list_item.dart';
-import 'create_service_page.dart';
-import 'edit_service_page.dart';
-import 'service_detail_page.dart';
+import '../../domain/entities/client_model.dart';
+import '../widgets/client_list_item.dart';
+import 'create_client_page.dart';
+import 'client_detail_page.dart';
+import 'edit_client_page.dart';
 
-class ServicesPage extends StatefulWidget {
-  const ServicesPage({super.key});
+class ClientsPage extends StatefulWidget {
+  const ClientsPage({super.key});
 
   @override
-  State<ServicesPage> createState() => _ServicesPageState();
+  State<ClientsPage> createState() => _ClientsPageState();
 }
 
-class _ServicesPageState extends State<ServicesPage> {
+class _ClientsPageState extends State<ClientsPage> {
   final ApiService _apiService = ApiService();
   final _searchController = TextEditingController();
 
-  // --- ESTADOS PARA LA BÚSQUEDA ---
-  List<ServiceModel> _allServices = []; // Almacena la lista completa y original de servicios
-  List<ServiceModel> _filteredServices = []; // Almacena la lista filtrada que se muestra en la UI
+  List<ClientModel> _allClients = [];
+  List<ClientModel> _filteredClients = [];
   bool _isLoading = true;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _fetchServices();
-    // Añadimos un listener al controlador para que la función de filtro se ejecute cada vez que el texto cambie.
-    _searchController.addListener(_filterServices);
+    _fetchClients();
+    _searchController.addListener(_filterClients);
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_filterServices);
+    _searchController.removeListener(_filterClients);
     _searchController.dispose();
     super.dispose();
   }
 
-  // Carga la lista inicial de servicios desde la API
-  Future<void> _fetchServices() async {
-    // Aseguramos que el estado de carga se active al refrescar
+  Future<void> _fetchClients() async {
     if (!_isLoading) {
       setState(() {
         _isLoading = true;
@@ -66,67 +62,58 @@ class _ServicesPageState extends State<ServicesPage> {
     }
 
     try {
-      final services = await _apiService.getServices(authProvider.token!);
-      setState(() {
-        _allServices = services;
-        _filteredServices = services; // Inicialmente, la lista filtrada es igual a la completa
-        _isLoading = false;
-      });
+      final clients = await _apiService.getClients(authProvider.token!);
+      if (mounted) {
+        setState(() {
+          _allClients = clients;
+          _filteredClients = clients;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceAll('Exception: ', '');
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  // --- FUNCIÓN DE FILTRADO: Filtra la lista de servicios ---
-  void _filterServices() {
+  void _filterClients() {
     final query = _searchController.text.toLowerCase();
     setState(() {
-      // Si la barra de búsqueda está vacía, mostramos todos los servicios.
       if (query.isEmpty) {
-        _filteredServices = _allServices;
+        _filteredClients = _allClients;
       } else {
-        // Si hay texto, filtramos la lista original (_allServices)
-        _filteredServices = _allServices
-            .where((service) => service.nombre.toLowerCase().contains(query))
+        _filteredClients = _allClients
+            .where((client) =>
+        client.nombre.toLowerCase().contains(query) ||
+            (client.nit?.toLowerCase().contains(query) ?? false))
             .toList();
       }
     });
   }
 
-  // --- MÉTODOS DE NAVEGACIÓN ---
+  void _navigateToDetail(ClientModel client) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => ClientDetailPage(client: client)),
+    );
+    if (result == true && mounted) {
+      _fetchClients();
+    }
+  }
+
   void _navigateToCreate() async {
     final result = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (context) => const CreateServicePage()),
+      MaterialPageRoute(builder: (context) => const CreateClientPage()),
     );
     if (result == true && mounted) {
-      _fetchServices();
+      _fetchClients();
     }
   }
-
-  void _navigateToEdit(ServiceModel service) async {
-    final result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(builder: (context) => EditServicePage(service: service)),
-    );
-    if (result == true && mounted) {
-      _fetchServices();
-    }
-  }
-
-  void _navigateToDetail(ServiceModel service) async {
-    final result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(builder: (context) => ServiceDetailPage(service: service)),
-    );
-    if (result == true && mounted) {
-      _fetchServices();
-    }
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -142,16 +129,13 @@ class _ServicesPageState extends State<ServicesPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 20),
-            const Text(
-              'Servicios',
-              style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold),
-            ),
+            const Text('Clientes',
+                style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
-            // --- Conectamos el TextField al controlador de búsqueda ---
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Buscar servicio por nombre...',
+                hintText: 'Buscar cliente por nombre o NIT...',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.grey.shade200,
@@ -166,14 +150,14 @@ class _ServicesPageState extends State<ServicesPage> {
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF00C6AD), Color(0xFF00AAB2)],
+                  colors: [Color(0xFF4A55A2), Color(0xFF8B93FF)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF00C6AD).withOpacity(0.4),
+                    color: const Color(0xFF4A55A2).withOpacity(0.4),
                     blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),
@@ -192,8 +176,11 @@ class _ServicesPageState extends State<ServicesPage> {
                         Icon(Icons.add, color: Colors.white),
                         SizedBox(width: 8),
                         Text(
-                          'Crear nuevo servicio',
-                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                          'Crear nuevo cliente',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -203,7 +190,7 @@ class _ServicesPageState extends State<ServicesPage> {
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: _buildServiceList(), // Usamos un método helper para construir la lista
+              child: _buildClientList(),
             ),
           ],
         ),
@@ -211,8 +198,7 @@ class _ServicesPageState extends State<ServicesPage> {
     );
   }
 
-  // --- WIDGET HELPER: Construye la lista basándose en el estado ---
-  Widget _buildServiceList() {
+  Widget _buildClientList() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -223,26 +209,25 @@ class _ServicesPageState extends State<ServicesPage> {
           children: [
             Text('Error: $_error'),
             const SizedBox(height: 10),
-            ElevatedButton(onPressed: _fetchServices, child: const Text('Reintentar'))
+            ElevatedButton(
+                onPressed: _fetchClients, child: const Text('Reintentar'))
           ],
         ),
       );
     }
-    if (_filteredServices.isEmpty) {
-      return const Center(child: Text('No se encontraron servicios que coincidan con la búsqueda.'));
+    if (_filteredClients.isEmpty) {
+      return const Center(
+          child: Text('No se encontraron clientes que coincidan.'));
     }
 
-    // Construimos la lista a partir de la lista FILTRADA
     return ListView.builder(
-      itemCount: _filteredServices.length,
+      itemCount: _filteredClients.length,
       itemBuilder: (context, index) {
-        final service = _filteredServices[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 12.0),
-          child: ServiceListItem(
-            service: service,
-            onTap: () => _navigateToDetail(service),
-            onEdit: () => _navigateToEdit(service),
+          child: ClientListItem(
+            client: _filteredClients[index],
+            onTap: () => _navigateToDetail(_filteredClients[index]),
           ),
         );
       },

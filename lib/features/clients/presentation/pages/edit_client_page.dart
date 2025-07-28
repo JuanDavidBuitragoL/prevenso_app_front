@@ -1,48 +1,56 @@
-// -------------------------------------------------------------------
-// features/services/presentation/pages/edit_service_page.dart
-// La pantalla para editar los detalles de un servicio existente.
+// ARCHIVO: lib/features/clients/presentation/pages/edit_client_page.dart (VERSIÓN FINAL)
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/services/api_service.dart';
-import '../../domain/entities/service_model.dart';
+import '../../domain/entities/client_model.dart';
 
-class EditServicePage extends StatefulWidget {
-  final ServiceModel service;
+class EditClientPage extends StatefulWidget {
+  final ClientModel client;
 
-  const EditServicePage({super.key, required this.service});
+  const EditClientPage({super.key, required this.client});
 
   @override
-  State<EditServicePage> createState() => _EditServicePageState();
+  State<EditClientPage> createState() => _EditClientPageState();
 }
 
-class _EditServicePageState extends State<EditServicePage> {
+class _EditClientPageState extends State<EditClientPage> {
   final _formKey = GlobalKey<FormState>();
   final ApiService _apiService = ApiService();
 
+  // Controladores para cada campo del formulario
   late TextEditingController _nameController;
-  late TextEditingController _durationController;
-  String? _selectedType;
-  // Los tipos deben coincidir con los del ENUM del backend
-  final List<String> _serviceTypes = ['curso', 'examen'];
+  late TextEditingController _nitController;
+  late TextEditingController _addressController;
+  late TextEditingController _phoneController;
+  late TextEditingController _emailController;
+
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.service.nombre);
-    _durationController = TextEditingController(text: widget.service.duracion);
-    _selectedType = widget.service.tipo;
+    // Inicializamos los controladores con los datos del cliente actual
+    _nameController = TextEditingController(text: widget.client.nombre);
+    _nitController = TextEditingController(text: widget.client.nit);
+    _addressController = TextEditingController(text: widget.client.direccion);
+    _phoneController = TextEditingController(text: widget.client.telefono);
+    _emailController = TextEditingController(text: widget.client.email);
   }
 
   @override
   void dispose() {
+    // Limpiamos los controladores para liberar memoria
     _nameController.dispose();
-    _durationController.dispose();
+    _nitController.dispose();
+    _addressController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
+  // --- Lógica para guardar los cambios en el backend ---
   Future<void> _saveChanges() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -51,24 +59,26 @@ class _EditServicePageState extends State<EditServicePage> {
 
     setState(() => _isLoading = true);
 
-    final dataToUpdate = {
-      'nombre_servicio': _nameController.text.trim(),
-      'tipo_servicio': _selectedType,
-      'duracion': _durationController.text.trim(),
+    final clientData = {
+      'nombre_cliente': _nameController.text.trim(),
+      'nit_cliente': _nitController.text.trim(),
+      'direccion': _addressController.text.trim(),
+      'telefono': _phoneController.text.trim(),
+      'email': _emailController.text.trim(),
     };
 
     try {
-      await _apiService.updateService(
-        serviceId: widget.service.id,
-        data: dataToUpdate,
+      await _apiService.updateClient(
+        clientId: widget.client.id,
+        data: clientData,
         token: authProvider.token!,
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Servicio actualizado con éxito'), backgroundColor: Colors.green),
+          const SnackBar(content: Text('Cliente actualizado con éxito'), backgroundColor: Colors.green),
         );
-        Navigator.of(context).pop(true); // Devuelve 'true' para refrescar
+        Navigator.of(context).pop(true); // Devuelve 'true' para refrescar la lista
       }
     } catch (e) {
       if (mounted) {
@@ -100,22 +110,30 @@ class _EditServicePageState extends State<EditServicePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Editando el servicio...',
+                  'Editando el cliente...',
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF00C6AD)),
                 ),
                 const SizedBox(height: 30),
-                _buildTextField(label: 'Nombre', controller: _nameController),
+
+                // Campos del formulario
+                _buildTextField(label: 'Nombre*', controller: _nameController),
                 const SizedBox(height: 20),
-                _buildDropdownField(),
+                _buildTextField(label: 'Nit', controller: _nitController, isRequired: false),
                 const SizedBox(height: 20),
-                _buildTextField(label: 'Duración (opcional)', controller: _durationController, isRequired: false),
+                _buildTextField(label: 'Dirección', controller: _addressController, isRequired: false),
+                const SizedBox(height: 20),
+                _buildTextField(label: 'Teléfono', controller: _phoneController, keyboardType: TextInputType.phone, isRequired: false),
+                const SizedBox(height: 20),
+                _buildTextField(label: 'Correo', controller: _emailController, keyboardType: TextInputType.emailAddress, isRequired: false),
                 const SizedBox(height: 50),
+
+                // Botón Guardar Cambios
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _saveChanges,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF27AE60),
+                      backgroundColor: const Color(0xFF27AE60), // Verde
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30.0),
@@ -127,6 +145,8 @@ class _EditServicePageState extends State<EditServicePage> {
                   ),
                 ),
                 const SizedBox(height: 16),
+
+                // Botón Cancelar
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
@@ -150,55 +170,38 @@ class _EditServicePageState extends State<EditServicePage> {
     );
   }
 
+  // Widget helper reutilizable para construir los campos de texto
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
     bool isRequired = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.black54, fontSize: 16)),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.black54, fontSize: 16),
+        ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
+          keyboardType: keyboardType,
           decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+            ),
           ),
           validator: (value) {
             if (isRequired && (value == null || value.trim().isEmpty)) {
               return 'Este campo es requerido';
             }
+            if (keyboardType == TextInputType.emailAddress && value != null && value.isNotEmpty && !RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
+              return 'Ingresa un correo válido';
+            }
             return null;
           },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDropdownField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Tipo', style: TextStyle(color: Colors.black54, fontSize: 16)),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: _selectedType,
-          items: _serviceTypes.map((String type) {
-            return DropdownMenuItem<String>(
-              value: type,
-              child: Text(type[0].toUpperCase() + type.substring(1)), // Capitaliza la primera letra
-            );
-          }).toList(),
-          onChanged: (String? newValue) {
-            setState(() {
-              _selectedType = newValue;
-            });
-          },
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
-          ),
-          validator: (value) => (value == null) ? 'Selecciona un tipo' : null,
         ),
       ],
     );

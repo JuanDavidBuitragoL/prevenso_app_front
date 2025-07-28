@@ -4,6 +4,7 @@
 // Se añade el nuevo botón "Editar servicios" a la cuadrícula.
 
 import 'package:flutter/material.dart';
+import '../../../clients/presentation/pages/clients_page.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
 import '../../../rates/presentation/pages/rates_page.dart';
 import '../../../services/presentation/pages/services_page.dart';
@@ -41,7 +42,17 @@ class ActionButtonsGrid extends StatelessWidget {
         const _ActionButton(icon: Icons.add_box_outlined, label: 'Crear cotización', color: Colors.white, iconColor: Colors.black, hasBorder: true),
 
         // Botón Editar Clientes
-        const _ActionButton(icon: Icons.business_outlined, label: 'Editar Clientes', color: Color(0xFFE2A9A9)),
+        GestureDetector(
+          onTap: () {
+            // Navega a la nueva página de Clientes
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ClientsPage()),
+            );
+          },
+          child: const _ActionButton(icon: Icons.business_outlined, label: 'Editar Clientes', color: Color(0xFFE2A9A9)),
+        ),
+
 
         GestureDetector(
           onTap: () {
