@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import '../../../clients/presentation/pages/clients_page.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
+import '../../../quotes/presentation/pages/quotes_page.dart';
 import '../../../rates/presentation/pages/rates_page.dart';
 import '../../../services/presentation/pages/services_page.dart';
 
@@ -39,8 +40,16 @@ class ActionButtonsGrid extends StatelessWidget {
           child: const _ActionButton(icon: Icons.edit_outlined, label: 'Editar tarifas', color: Color(0xFF88E2D6)),
         ),
         // Botón Crear Cotización
-        const _ActionButton(icon: Icons.add_box_outlined, label: 'Crear cotización', color: Colors.white, iconColor: Colors.black, hasBorder: true),
-
+        GestureDetector(
+          onTap: () {
+            // Navega a la nueva página de Cotizaciones
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const QuotesPage()),
+            );
+          },
+          child: const _ActionButton(icon: Icons.add_box_outlined, label: 'Cotizaciones', color: Colors.white, iconColor: Colors.black, hasBorder: true),
+        ),
         // Botón Editar Clientes
         GestureDetector(
           onTap: () {

@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 
 import '../../features/auth/domain/entities/user_model.dart';
 import '../../features/clients/domain/entities/client_model.dart';
+import '../../features/quotes/domain/entities/quote_model.dart';
 import '../../features/rates/domain/entities/rate_model.dart';
 import '../../features/services/domain/entities/service_model.dart';
 
@@ -410,6 +411,87 @@ class ApiService {
     } else {
       final errorBody = jsonDecode(response.body);
       throw Exception(errorBody['message'] ?? 'Error al actualizar el cliente');
+    }
+  }
+  // --- Obtener la lista de todas las cotizaciones ---
+  Future<List<QuoteModel>> getQuotes(String token) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/cotizaciones'),
+      headers: <String, String>{
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => QuoteModel.fromJson(json)).toList();
+    } else {
+      throw Exception('Error al cargar las cotizaciones');
+    }
+  }
+  // --- Obtener los detalles de una sola cotización por su ID ---
+  Future<QuoteModel> getQuoteById(int quoteId, String token) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/cotizaciones/$quoteId'),
+      headers: <String, String>{
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return QuoteModel.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Error al cargar los detalles de la cotización');
+    }
+  }
+
+  // --- Crear una nueva cotización ---
+  Future<void> createQuote({
+    required Map<String, dynamic> quoteData,
+    required String token,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/cotizaciones'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(quoteData),
+    );
+
+    if (response.statusCode != 201) {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(errorBody['message'] ?? 'Error al crear la cotización');
+    }
+  }
+  // --- Eliminar una cotización ---
+  Future<void> deleteQuote(int quoteId, String token) async {
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/cotizaciones/$quoteId'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode != 204) {
+      throw Exception('Error al eliminar la cotización');
+    }
+  }
+
+  // --- Actualizar una cotización ---
+  Future<void> updateQuote({
+    required int quoteId,
+    required Map<String, dynamic> quoteData,
+    required String token,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$_baseUrl/cotizaciones/$quoteId'),
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(quoteData),
+    );
+    if (response.statusCode != 200) {
+      final errorBody = jsonDecode(response.body);
+      throw Exception(errorBody['message'] ?? 'Error al actualizar la cotización');
     }
   }
 }
