@@ -1,22 +1,42 @@
-// ARCHIVO: lib/features/quotes/domain/entities/quote_model.dart (NUEVO ARCHIVO CORREGIDO)
+// =============================================================================
+// ARCHIVO: lib/features/quotes/domain/entities/quote_model.dart (VERSIÓN CORREGIDA)
+// FUNCIÓN:   Define los modelos de datos para las cotizaciones, incluyendo
+//            todos los campos necesarios para los detalles.
+// =============================================================================
 
 // Modelo para un ítem individual dentro de una cotización
 class QuoteItemModel {
-  final int serviceId; // <-- CAMBIO: Se añade el ID del servicio
+  final int serviceId;
   final String serviceName;
   final int quantity;
+  final String? discountType;
+  final double? discountValue;
+  final double priceBaseUnit;
+  final double priceFinalUnit;
+  final double subtotal;
 
   QuoteItemModel({
-    required this.serviceId, // <-- CAMBIO: Se añade al constructor
+    required this.serviceId,
     required this.serviceName,
     required this.quantity,
+    this.discountType,
+    this.discountValue,
+    required this.priceBaseUnit,
+    required this.priceFinalUnit,
+    required this.subtotal,
   });
 
   factory QuoteItemModel.fromJson(Map<String, dynamic> json) {
     return QuoteItemModel(
-      serviceId: json['id_servicio'], // <-- CAMBIO: Se mapea desde el JSON
+      serviceId: json['id_servicio'],
       serviceName: json['servicio']['nombre_servicio'] ?? 'N/A',
       quantity: json['cantidad'],
+      discountType: json['tipo_descuento'],
+      // --- CORRECCIÓN: Se usa double.tryParse para manejar el string de forma segura ---
+      discountValue: json['valor_descuento'] != null ? double.tryParse(json['valor_descuento'].toString()) : null,
+      priceBaseUnit: double.parse(json['precio_base_unitario'].toString()),
+      priceFinalUnit: double.parse(json['precio_final_unitario'].toString()),
+      subtotal: double.parse(json['subtotal_item'].toString()),
     );
   }
 }

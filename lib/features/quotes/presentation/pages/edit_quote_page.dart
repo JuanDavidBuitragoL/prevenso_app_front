@@ -1,13 +1,20 @@
+// =============================================================================
 // ARCHIVO: lib/features/quotes/presentation/pages/edit_quote_page.dart
+// FUNCIÓN:   Pantalla completa para editar una cotización existente (borrador).
+// =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../clients/domain/entities/client_model.dart';
 import '../../../rates/domain/entities/rate_model.dart';
 import '../../domain/entities/quote_model.dart';
+
+// Enum para el tipo de descuento, debe coincidir con el backend
+enum DiscountType { porcentaje, fijo }
 
 // Modelo para manejar los ítems seleccionados en la UI
 class SelectedItem {
@@ -15,13 +22,32 @@ class SelectedItem {
   final String serviceName;
   final double unitPrice;
   int quantity;
+  DiscountType? discountType;
+  double? discountValue;
 
   SelectedItem({
     required this.serviceId,
     required this.serviceName,
     required this.unitPrice,
     this.quantity = 1,
+    this.discountType,
+    this.discountValue,
   });
+
+  double get finalUnitPrice {
+    if (discountType == null || discountValue == null || discountValue == 0) {
+      return unitPrice;
+    }
+    if (discountType == DiscountType.fijo) {
+      return (unitPrice - discountValue!) > 0 ? (unitPrice - discountValue!) : 0;
+    }
+    if (discountType == DiscountType.porcentaje) {
+      return unitPrice * (1 - (discountValue! / 100));
+    }
+    return unitPrice;
+  }
+
+  double get subtotal => finalUnitPrice * quantity;
 }
 
 class EditQuotePage extends StatefulWidget {
@@ -41,8 +67,8 @@ class _EditQuotePageState extends State<EditQuotePage> {
   String? _selectedCity;
   final List<SelectedItem> _selectedItems = [];
   double _totalValue = 0.0;
-  bool _isLoadingData = true; // Nuevo estado para la carga inicial
-  bool _isSubmitting = false; // Nuevo estado para el envío
+  bool _isLoadingData = true;
+  bool _isSubmitting = false;
 
   List<ClientModel> _availableClients = [];
   List<RateModel> _availableRates = [];
@@ -56,7 +82,10 @@ class _EditQuotePageState extends State<EditQuotePage> {
 
   Future<void> _fetchInitialData() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (authProvider.token == null) return;
+    if (authProvider.token == null) {
+      setState(() => _isLoadingData = false);
+      return;
+    }
 
     try {
       final results = await Future.wait([
@@ -74,33 +103,41 @@ class _EditQuotePageState extends State<EditQuotePage> {
           _availableRates = rates;
           _availableCities = cities;
 
-          // --- Pre-poblar el formulario con los datos de la cotización existente ---
-          _selectedClient = clients.firstWhere((c) => c.nombre == widget.quote.clientName, orElse: () => clients.first);
+          // --- CORRECCIÓN: Se maneja el caso de lista vacía antes de llamar a firstWhere ---
+          if (clients.isNotEmpty) {
+            _selectedClient = clients.firstWhere(
+                  (c) => c.nombre == widget.quote.clientName,
+              // Ahora este orElse es seguro porque sabemos que la lista no está vacía.
+              orElse: () => clients.first,
+            );
+          }
 
           if (widget.quote.items.isNotEmpty) {
             final firstItemInQuote = widget.quote.items.first;
             final rateForFirstItem = rates.firstWhere(
                   (r) => r.serviceId == firstItemInQuote.serviceId,
-              orElse: () => rates.first, // Fallback
+              orElse: () => rates.first,
             );
             _selectedCity = rateForFirstItem.ciudad;
           }
 
           _selectedItems.addAll(widget.quote.items.map((item) {
-            final rate = rates.firstWhere((r) => r.serviceId == item.serviceId && r.ciudad == _selectedCity);
+            final rate = _availableRates.firstWhere((r) => r.serviceId == item.serviceId && r.ciudad == _selectedCity);
             return SelectedItem(
               serviceId: item.serviceId,
               serviceName: item.serviceName,
               quantity: item.quantity,
               unitPrice: double.parse(rate.costo),
+              discountType: item.discountType == 'porcentaje' ? DiscountType.porcentaje : (item.discountType == 'fijo' ? DiscountType.fijo : null),
+              discountValue: item.discountValue,
             );
           }));
           _calculateTotal();
-          _isLoadingData = false; // Termina la carga inicial
+          _isLoadingData = false;
         });
       }
     } catch (e) {
-      if(mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
         setState(() => _isLoadingData = false);
       }
@@ -139,9 +176,125 @@ class _EditQuotePageState extends State<EditQuotePage> {
   void _calculateTotal() {
     double total = 0;
     for (var item in _selectedItems) {
-      total += item.unitPrice * item.quantity;
+      total += item.subtotal;
     }
     _totalValue = total;
+  }
+
+  // --- _showDiscountDialog (COMPLETAMENTE REDISEÑADO) ---
+  void _showDiscountDialog(int index) {
+    final item = _selectedItems[index];
+    final valueController = TextEditingController(text: item.discountValue?.toStringAsFixed(0) ?? '');
+    DiscountType? currentDiscountType = item.discountType;
+
+    List<bool> isSelected = [
+      currentDiscountType == DiscountType.porcentaje,
+      currentDiscountType == DiscountType.fijo,
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Column(
+                children: [
+                  const Icon(Icons.sell_outlined, size: 32, color: AppTheme.primaryColor),
+                  const SizedBox(height: 8),
+                  const Text('Aplicar Descuento', textAlign: TextAlign.center),
+                  Text(
+                    item.serviceName,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal, color: AppTheme.subtleTextColor),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ToggleButtons(
+                    isSelected: isSelected,
+                    onPressed: (int newIndex) {
+                      setDialogState(() {
+                        for (int i = 0; i < isSelected.length; i++) {
+                          isSelected[i] = i == newIndex;
+                        }
+                        currentDiscountType = newIndex == 0 ? DiscountType.porcentaje : DiscountType.fijo;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    selectedColor: Colors.white,
+                    fillColor: AppTheme.primaryColor,
+                    color: AppTheme.primaryColor,
+                    constraints: const BoxConstraints(minHeight: 40.0, minWidth: 100.0),
+                    children: const [
+                      Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Porcentaje')),
+                      Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Monto Fijo')),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  TextFormField(
+                    controller: valueController,
+                    decoration: _inputDecoration().copyWith(
+                      labelText: 'Valor del descuento',
+                      prefixIcon: currentDiscountType == DiscountType.fijo ? const Icon(Icons.attach_money) : null,
+                      suffixIcon: currentDiscountType == DiscountType.porcentaje ? const Icon(Icons.percent) : null,
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ],
+              ),
+              actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              actions: [
+                // --- BOTONES DE ACCIÓN REDISEÑADOS ---
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          setState(() {
+                            _selectedItems[index].discountType = null;
+                            _selectedItems[index].discountValue = null;
+                            _calculateTotal();
+                          });
+                          Navigator.of(context).pop();
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text('Quitar'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _selectedItems[index].discountType = currentDiscountType;
+                            _selectedItems[index].discountValue = double.tryParse(valueController.text) ?? 0.0;
+                            _calculateTotal();
+                          });
+                          Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text('Guardar'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _submitQuote(String status) async {
@@ -164,6 +317,8 @@ class _EditQuotePageState extends State<EditQuotePage> {
       'items': _selectedItems.map((item) => {
         'id_servicio': item.serviceId,
         'cantidad': item.quantity,
+        'tipo_descuento': item.discountType?.name,
+        'valor_descuento': item.discountValue,
       }).toList(),
     };
 
@@ -171,7 +326,7 @@ class _EditQuotePageState extends State<EditQuotePage> {
       await _apiService.updateQuote(quoteId: widget.quote.id, quoteData: quoteData, token: authProvider.token!);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Cotización actualizada con éxito'), backgroundColor: Colors.green),
+          const SnackBar(content: Text('Cotización actualizada con éxito'), backgroundColor: Colors.green),
         );
         Navigator.of(context).pop(true);
       }
@@ -211,9 +366,10 @@ class _EditQuotePageState extends State<EditQuotePage> {
 
                 _buildSectionTitle('Cliente*'),
                 DropdownButtonFormField<ClientModel>(
+                  isExpanded: true,
                   value: _selectedClient,
                   hint: const Text('Seleccione un cliente'),
-                  items: _availableClients.map((client) => DropdownMenuItem(value: client, child: Text(client.nombre))).toList(),
+                  items: _availableClients.map((client) => DropdownMenuItem(value: client, child: Text(client.nombre, overflow: TextOverflow.ellipsis))).toList(),
                   onChanged: (client) => setState(() => _selectedClient = client),
                   validator: (value) => value == null ? 'Seleccione un cliente' : null,
                   decoration: _inputDecoration(),
@@ -222,6 +378,7 @@ class _EditQuotePageState extends State<EditQuotePage> {
 
                 _buildSectionTitle('Ciudad*'),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   value: _selectedCity,
                   hint: const Text('Seleccione una ciudad'),
                   items: _availableCities.map((city) => DropdownMenuItem(value: city, child: Text(city))).toList(),
@@ -233,8 +390,14 @@ class _EditQuotePageState extends State<EditQuotePage> {
 
                 _buildSectionTitle('Añadir Servicio'),
                 DropdownButtonFormField<RateModel>(
+                  isExpanded: true,
                   hint: Text(_selectedCity == null ? 'Primero seleccione una ciudad' : 'Seleccione un servicio para añadir'),
-                  items: ratesForSelectedCity.map((rate) => DropdownMenuItem(value: rate, child: Text(rate.nombreServicio))).toList(),
+                  items: ratesForSelectedCity.map((rate) {
+                    return DropdownMenuItem<RateModel>(
+                      value: rate,
+                      child: Text(rate.nombreServicio, overflow: TextOverflow.ellipsis),
+                    );
+                  }).toList(),
                   onChanged: _selectedCity == null ? null : _addItem,
                   decoration: _inputDecoration(),
                 ),
@@ -247,11 +410,11 @@ class _EditQuotePageState extends State<EditQuotePage> {
                   itemBuilder: (context, index) {
                     final item = _selectedItems[index];
                     return _TariffListItem(
-                      name: item.serviceName,
-                      quantity: item.quantity,
+                      item: item,
                       onRemove: () => _removeItem(index),
                       onIncrement: () => _updateQuantity(index, 1),
                       onDecrement: () => _updateQuantity(index, -1),
+                      onDiscount: () => _showDiscountDialog(index),
                     );
                   },
                 ),
@@ -308,53 +471,93 @@ class _EditQuotePageState extends State<EditQuotePage> {
   }
 }
 
+// --- WIDGET _TariffListItem (COMPLETAMENTE REDISEÑADO) ---
 class _TariffListItem extends StatelessWidget {
-  final String name;
-  final int quantity;
+  final SelectedItem item;
   final VoidCallback onRemove;
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
+  final VoidCallback onDiscount;
 
   const _TariffListItem({
-    required this.name,
-    required this.quantity,
+    required this.item,
     required this.onRemove,
     required this.onIncrement,
     required this.onDecrement,
+    required this.onDiscount,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
-              onPressed: onRemove,
+    final currencyFormatter = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
+    final hasDiscount = item.discountType != null && item.discountValue != null && item.discountValue! > 0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20), onPressed: onRemove),
+              Expanded(
+                child: Text(
+                  item.serviceName,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(icon: const Icon(Icons.remove_circle_outline, size: 22), onPressed: onDecrement),
+              Text(item.quantity.toString(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              IconButton(icon: const Icon(Icons.add_circle_outline, size: 22), onPressed: onIncrement),
+              IconButton(
+                icon: Icon(Icons.sell_outlined, color: hasDiscount ? AppTheme.primaryColor : Colors.grey, size: 20),
+                onPressed: onDiscount,
+              ),
+            ],
+          ),
+          if (hasDiscount)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Precio Base:', style: TextStyle(color: AppTheme.subtleTextColor)),
+                        Text(currencyFormatter.format(item.unitPrice), style: const TextStyle(decoration: TextDecoration.lineThrough, color: AppTheme.subtleTextColor)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Precio Final:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(currencyFormatter.format(item.finalUnitPrice), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-            Expanded(child: Text(name, style: const TextStyle(fontSize: 16))),
-            IconButton(
-              icon: const Icon(Icons.remove_circle_outline),
-              onPressed: onDecrement,
-            ),
-            Text(
-              quantity.toString(),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              onPressed: onIncrement,
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
