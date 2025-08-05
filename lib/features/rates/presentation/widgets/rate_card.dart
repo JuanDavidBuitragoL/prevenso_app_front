@@ -1,7 +1,7 @@
 // =============================================================================
-// ARCHIVO: features/rates/presentation/widgets/rate_card.dart (VERSIÓN FINAL)
-// FUNCIÓN:   Componente visual para una tarjeta de tarifa. Ahora es más simple
-//            y solo se encarga de mostrar datos y ejecutar una acción.
+// ARCHIVO: features/rates/presentation/widgets/rate_card.dart (VERSIÓN CORREGIDA)
+// FUNCIÓN:   Componente visual para una tarjeta de tarifa. Se ha reestructurado
+//            con un Expanded para evitar errores de desbordamiento de layout.
 // =============================================================================
 
 import 'package:flutter/material.dart';
@@ -30,7 +30,7 @@ IconData _getIconForService(String serviceName) {
 
 class RateCard extends StatelessWidget {
   final RateModel rate;
-  final VoidCallback onTap; // Acepta la función de navegación
+  final VoidCallback onTap;
 
   const RateCard({super.key, required this.rate, required this.onTap});
 
@@ -40,7 +40,7 @@ class RateCard extends StatelessWidget {
     final formattedPrice = currencyFormatter.format(double.parse(rate.costo));
 
     return InkWell(
-      onTap: onTap, // Llama a la función de navegación al ser presionado
+      onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -50,7 +50,6 @@ class RateCard extends StatelessWidget {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             CircleAvatar(
               radius: 25,
@@ -61,24 +60,49 @@ class RateCard extends StatelessWidget {
                 color: const Color(0xFF00C6AD),
               ),
             ),
-            const Spacer(),
-            Text(
-              rate.nombreServicio,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              formattedPrice,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                color: Colors.black,
+            // --- CORRECCIÓN: Se usa Expanded para que el contenido de texto ocupe el espacio restante ---
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end, // Alinea el contenido a la parte inferior del espacio
+                children: [
+                  Text(
+                    rate.nombreServicio,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on_outlined, size: 14, color: Colors.black.withOpacity(0.6)),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          rate.ciudad,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.black.withOpacity(0.6),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    formattedPrice,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
