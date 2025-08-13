@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:prevenso_app_front/features/quotes/presentation/pages/rate_search_page.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -274,7 +275,7 @@ class _CreateQuotePageState extends State<CreateQuotePage> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.token == null || authProvider.user == null) return;
 
-    // --- Lógica de envío ACTUALIZADA para incluir descuentos ---
+    // --- Lógica de envío para incluir descuentos ---
     final quoteData = {
       'id_usuario': authProvider.user!.id,
       'id_cliente': _selectedClient!.id,
@@ -300,6 +301,30 @@ class _CreateQuotePageState extends State<CreateQuotePage> {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+  // --- Abre la pantalla de búsqueda de tarifas ---
+  Future<void> _openRateSearch() async {
+    if (_selectedCity == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, seleccione una ciudad primero.'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    final ratesForSelectedCity = _availableRates.where((r) => r.ciudad == _selectedCity).toList();
+
+    // Navegamos a la nueva pantalla de búsqueda y esperamos a que nos devuelva una tarifa
+    final RateModel? selectedRate = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RateSearchPage(availableRates: ratesForSelectedCity),
+      ),
+    );
+
+    // Si el usuario seleccionó una tarifa, la añadimos a la lista
+    if (selectedRate != null) {
+      _addItem(selectedRate);
     }
   }
 
@@ -386,29 +411,23 @@ class _CreateQuotePageState extends State<CreateQuotePage> {
                 ),
                 const SizedBox(height: 20),
 
-                // --- Dropdown de Servicio (CORREGIDO) ---
+                // --- Dropdown de Servicio  ---
                 _buildSectionTitle('Añadir Servicio'),
-                DropdownButtonFormField<RateModel>(
-                  isExpanded: true,
-                  // <-- ESTA ES LA CORRECCIÓN PRINCIPAL
-                  hint: Text(
-                    _selectedCity == null
-                        ? 'Primero seleccione una ciudad'
-                        : 'Seleccione un servicio para añadir',
+                InkWell(
+                  onTap: _openRateSearch,
+                  borderRadius: BorderRadius.circular(12.0),
+                  child: InputDecorator(
+                    decoration: _inputDecoration().copyWith(
+                      hintText: _selectedCity == null ? 'Primero seleccione una ciudad' : 'Toca para buscar un servicio...',
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Buscar Servicio', style: TextStyle(color: AppTheme.subtleTextColor, fontSize: 16)),
+                        Icon(Icons.search, color: AppTheme.subtleTextColor),
+                      ],
+                    ),
                   ),
-                  items: ratesForSelectedCity.map((rate) {
-                    return DropdownMenuItem<RateModel>(
-                      value: rate,
-                      // El Text ahora sabrá que no puede ser infinitamente ancho
-                      // y cortará el texto si es muy largo.
-                      child: Text(
-                        rate.nombreServicio,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: _selectedCity == null ? null : _addItem,
-                  decoration: _inputDecoration(),
                 ),
                 const SizedBox(height: 16),
 
