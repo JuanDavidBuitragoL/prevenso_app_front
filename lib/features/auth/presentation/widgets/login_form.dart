@@ -1,15 +1,16 @@
 // =============================================================================
-// ARCHIVO: features/auth/presentation/widgets/login_form.dart
-// FUNCIÓN:   Widget que contiene el formulario de inicio de sesión, se conecta
-//            al AuthProvider para validar credenciales y navegar.
+// ARCHIVO: features/auth/presentation/widgets/login_form.dart (VERSIÓN FINAL)
+// FUNCIÓN:   Añade el enlace de "Olvidaste tu contraseña" y navega a la
+//            pantalla de recuperación sin pasarle ningún email.
 // =============================================================================
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/services/api_service.dart'; // Necesario para _fetchUsers
+import '../../../../core/services/api_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../main_screen.dart';
+import '../pages/forgot_password_page.dart'; // <-- Importar la página
 import '../pages/register_page.dart';
 import '../providers/auth_provider.dart';
 
@@ -23,7 +24,7 @@ class LoginForm extends StatefulWidget {
 class _LoginFormState extends State<LoginForm> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
-  final _apiService = ApiService(); // Usado solo para obtener la lista de usuarios
+  final _apiService = ApiService();
 
   bool _isLoading = false;
   String? _selectedUser;
@@ -41,7 +42,6 @@ class _LoginFormState extends State<LoginForm> {
     super.dispose();
   }
 
-  // Obtiene la lista de nombres de usuario del backend para poblar el dropdown.
   Future<void> _fetchUsers() async {
     try {
       final users = await _apiService.getUsuarios();
@@ -61,33 +61,26 @@ class _LoginFormState extends State<LoginForm> {
     }
   }
 
-  // Maneja la lógica de inicio de sesión al presionar el botón.
   Future<void> _login() async {
-    // Valida que los campos del formulario sean correctos.
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
     setState(() => _isLoading = true);
-
-    // Obtiene la instancia del AuthProvider para llamar a la función de login.
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     try {
-      // Llama al método de login del provider.
       await authProvider.login(
         _selectedUser!,
         _passwordController.text,
       );
 
-      // Si el login es exitoso, navega a la pantalla principal.
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const MainScreen()),
         );
       }
     } catch (e) {
-      // Si el provider lanza un error, lo muestra en un SnackBar.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -97,7 +90,6 @@ class _LoginFormState extends State<LoginForm> {
         );
       }
     } finally {
-      // Se asegura de detener el indicador de carga, incluso si hay un error.
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -120,7 +112,6 @@ class _LoginFormState extends State<LoginForm> {
               Text('Inicia sesión', style: textTheme.displayLarge),
               const SizedBox(height: 30),
 
-              // Campo para seleccionar el nombre de usuario
               Text('Nombre', style: textTheme.bodyLarge),
               const SizedBox(height: 5),
               DropdownButtonFormField<String>(
@@ -147,7 +138,6 @@ class _LoginFormState extends State<LoginForm> {
               ),
               const SizedBox(height: 15),
 
-              // Campo para la contraseña
               Text('Contraseña', style: textTheme.bodyLarge),
               const SizedBox(height: 8),
               TextFormField(
@@ -162,9 +152,32 @@ class _LoginFormState extends State<LoginForm> {
                   return null;
                 },
               ),
+              const SizedBox(height: 8),
+
+              // --- CAMBIO CLAVE: Enlace para recuperar contraseña ---
+              Align(
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  onTap: () {
+                    // Navega a la pantalla de recuperación SIN pasar email
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ForgotPasswordPage(),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    '¿Olvidaste tu contraseña?',
+                    style: TextStyle(
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 25),
 
-              // Botón de Acceder
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -183,9 +196,8 @@ class _LoginFormState extends State<LoginForm> {
               ),
               const SizedBox(height: 24),
 
-              // Texto para registrarse (funcionalidad futura)
               Align(
-                alignment: Alignment.centerRight,
+                alignment: Alignment.center,
                 child: RichText(
                   text: TextSpan(
                     style: textTheme.bodyLarge,
@@ -200,7 +212,6 @@ class _LoginFormState extends State<LoginForm> {
                         ),
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
-                            // Navega a la pantalla de registro
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (context) => const RegisterPage()),

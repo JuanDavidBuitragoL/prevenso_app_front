@@ -1,18 +1,19 @@
-// -------------------------------------------------------------------
-// features/profile/presentation/pages/profile_page.dart
-// La pantalla principal para la configuración del perfil de usuario.
+// =============================================================================
+// ARCHIVO: features/profile/presentation/pages/profile_page.dart (VERSIÓN FINAL)
+// FUNCIÓN:   Inicia el flujo de cambio de contraseña, ahora pasando el email
+//            del usuario actual a la pantalla de recuperación.
+// =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/pages/login_page.dart';
-import '../../../auth/presentation/pages/verification_page.dart';
+import '../../../auth/presentation/pages/forgot_password_page.dart'; // <-- Importar la página
 import '../widgets/profile_avatar.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
-  // --- NUEVO MÉTODO para mostrar el diálogo de edición ---
   void _showEditNameDialog(BuildContext context, AuthProvider authProvider) {
     final nameController = TextEditingController(text: authProvider.user?.nombre_usuario);
     final formKey = GlobalKey<FormState>();
@@ -70,10 +71,8 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Usamos Consumer para escuchar los cambios en AuthProvider y reconstruir la UI
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        // Si no hay un usuario (ej. al iniciar), mostramos un estado de carga
         if (authProvider.user == null) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
@@ -98,13 +97,11 @@ class ProfilePage extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // --- Mostramos el nombre del usuario desde el provider ---
                     Text(
                       authProvider.user!.nombre_usuario,
                       style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(width: 8),
-                    // --- El botón ahora llama a nuestro diálogo ---
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, color: Colors.black54),
                       onPressed: () => _showEditNameDialog(context, authProvider),
@@ -112,14 +109,18 @@ class ProfilePage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 40),
-                // --- Botón de Cambiar Contraseña ---
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
+                      // --- CAMBIO CLAVE: Navega a la página de recuperación CON el email ---
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const VerificationPage()),
+                        MaterialPageRoute(
+                          builder: (context) => ForgotPasswordPage(
+                            email: authProvider.user!.email,
+                          ),
+                        ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
@@ -133,13 +134,11 @@ class ProfilePage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // --- Botón de Cerrar Sesión con lógica real ---
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
                     onPressed: () {
                       authProvider.logout();
-                      // Navegamos al login y eliminamos todas las pantallas anteriores de la pila
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(builder: (context) => const LoginPage()),
                             (Route<dynamic> route) => false,

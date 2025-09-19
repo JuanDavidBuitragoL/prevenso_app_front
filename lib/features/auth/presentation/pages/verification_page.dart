@@ -1,13 +1,16 @@
-// --- PASO 3.2: Actualizar la página de Verificación ---
-// ARCHIVO: lib/features/auth/presentation/pages/verification_page.dart (ACTUALIZADO)
+// =============================================================================
+// ARCHIVO: features/auth/presentation/pages/verification_page.dart (VERSIÓN FINAL)
+// FUNCIÓN:   Pantalla para introducir el código. Ahora recibe el email para
+//            saber a quién pertenece el token.
+// =============================================================================
 
 import 'package:flutter/material.dart';
 import 'reset_password_page.dart';
 import '../widgets/lock_avatar.dart';
-// No usaremos OtpInputField por ahora para simplificar, usaremos un TextFormField normal.
 
 class VerificationPage extends StatefulWidget {
-  const VerificationPage({super.key});
+  final String email;
+  const VerificationPage({super.key, required this.email});
 
   @override
   State<VerificationPage> createState() => _VerificationPageState();
@@ -19,11 +22,13 @@ class _VerificationPageState extends State<VerificationPage> {
 
   void _verifyToken() {
     if (_formKey.currentState!.validate()) {
-      // Pasamos el token a la siguiente pantalla
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ResetPasswordPage(token: _tokenController.text.trim()),
+          builder: (context) => ResetPasswordPage(
+            token: _tokenController.text.trim(),
+            email: widget.email, // Pasa el email a la siguiente pantalla
+          ),
         ),
       );
     }
@@ -60,16 +65,18 @@ class _VerificationPageState extends State<VerificationPage> {
                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Revisa tu correo y pega aquí el código (token) que te enviamos.',
+              Text(
+                'Revisa tu correo (${widget.email}) y pega aquí el código que te enviamos.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.black54),
+                style: const TextStyle(fontSize: 16, color: Colors.black54),
               ),
               const SizedBox(height: 40),
               TextFormField(
                 controller: _tokenController,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 20, letterSpacing: 8),
                 decoration: const InputDecoration(
-                  labelText: 'Código de Recuperación (Token)',
+                  labelText: 'Código de Recuperación',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {

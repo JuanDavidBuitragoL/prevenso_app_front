@@ -82,14 +82,9 @@ class AuthProvider with ChangeNotifier {
   }
 
   // --- Llamar al servicio de resetPassword ---
-  Future<String> resetPassword(String token, String newPassword) async {
-    try {
-      final result = await _apiService.resetPassword(token, newPassword);
-      return result['message'];
-    } catch (e) {
-      print('Error en resetPassword provider: $e');
-      throw e;
-    }
+  Future<String> resetPassword(String email, String token, String newPassword) async {
+    final result = await _apiService.resetPassword(email, token, newPassword);
+    return result['message'];
   }
   // --- Registrar y luego iniciar sesión automáticamente ---
   Future<void> register({

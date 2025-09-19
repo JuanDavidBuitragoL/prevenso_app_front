@@ -1,5 +1,8 @@
-// --- PASO 3.3: Actualizar la página de Reset Password ---
-// ARCHIVO: lib/features/auth/presentation/pages/reset_password_page.dart (ACTUALIZADO)
+// =============================================================================
+// ARCHIVO: features/auth/presentation/pages/reset_password_page.dart (VERSIÓN FINAL)
+// FUNCIÓN:   Pantalla final para establecer la nueva contraseña. Ahora recibe
+//            tanto el token como el email para enviarlos al backend.
+// =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,9 +11,9 @@ import 'login_page.dart';
 import '../widgets/lock_avatar.dart';
 
 class ResetPasswordPage extends StatefulWidget {
-  // Ahora recibe el token como parámetro
   final String token;
-  const ResetPasswordPage({super.key, required this.token});
+  final String email;
+  const ResetPasswordPage({super.key, required this.token, required this.email});
 
   @override
   State<ResetPasswordPage> createState() => _ResetPasswordPageState();
@@ -37,14 +40,14 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     try {
       final message = await authProvider.resetPassword(
-        widget.token,
+        widget.email, // Pasa el email
+        widget.token, // Pasa el token
         _newPasswordController.text,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message), backgroundColor: Colors.green),
         );
-        // Navegamos de vuelta al login y eliminamos todas las pantallas anteriores
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const LoginPage()),
               (route) => false,
@@ -65,7 +68,6 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    // ... (El build se mantiene igual, solo cambia el onPressed del botón)
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -84,14 +86,25 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 const SizedBox(height: 10),
                 const LockAvatar(radius: 60),
                 const SizedBox(height: 20),
-                const Text('Crea una contraseña nueva', /*...*/),
+                const Text(
+                  'Crea una contraseña nueva',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 16),
-                const Text('Tu nueva contraseña debe ser diferente...', /*...*/),
+                const Text(
+                  'Tu nueva contraseña debe ser diferente a las contraseñas usadas anteriormente.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: Colors.black54),
+                ),
                 const SizedBox(height: 25),
                 TextFormField(
                   controller: _newPasswordController,
                   obscureText: true,
-                  decoration: const InputDecoration(hintText: 'Nueva contraseña', /*...*/),
+                  decoration: const InputDecoration(
+                    hintText: 'Nueva contraseña',
+                    border: OutlineInputBorder(),
+                  ),
                   validator: (value) {
                     if (value == null || value.isEmpty) return 'Por favor, ingresa una contraseña';
                     if (value.length < 8) return 'La contraseña debe tener al menos 8 caracteres';
@@ -102,7 +115,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: true,
-                  decoration: const InputDecoration(hintText: 'Confirma la contraseña', /*...*/),
+                  decoration: const InputDecoration(
+                    hintText: 'Confirma la contraseña',
+                    border: OutlineInputBorder(),
+                  ),
                   validator: (value) {
                     if (value != _newPasswordController.text) return 'Las contraseñas no coinciden';
                     return null;
@@ -113,7 +129,13 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _resetPassword,
-                    style: ElevatedButton.styleFrom(/*...*/),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2F54EB),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30.0),
+                      ),
+                    ),
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text('Crear', style: TextStyle(fontSize: 16)),

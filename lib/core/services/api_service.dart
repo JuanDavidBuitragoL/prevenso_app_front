@@ -102,13 +102,14 @@ class ApiService {
   }
 
   // --- Enviar el token y la nueva contraseña ---
-  Future<Map<String, dynamic>> resetPassword(String token, String newPassword) async {
+  Future<Map<String, dynamic>> resetPassword(String email, String token, String newPassword) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/auth/reset-password'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
       },
       body: jsonEncode(<String, String>{
+        'email': email,
         'token': token,
         'newPassword': newPassword,
       }),
