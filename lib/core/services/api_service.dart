@@ -4,6 +4,7 @@
 // =============================================================================
 
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 import '../../features/auth/domain/entities/user_model.dart';
@@ -495,5 +496,25 @@ class ApiService {
       throw Exception(errorBody['message'] ?? 'Error al actualizar la cotización');
     }
   }
+  // --- Método para descargar el PDF de una cotización ---
+  Future<Uint8List> getQuotePdf(int quoteId, String token) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/cotizaciones/$quoteId/pdf'),
+      headers: <String, String>{
+        'Authorization': 'Bearer $token',
+      },
+    );
 
+    if (response.statusCode == 200) {
+      // Ahora sí es válido, porque 'async' envuelve este valor en un Future
+      return response.bodyBytes;
+    } else {
+      try {
+        final errorBody = jsonDecode(response.body);
+        throw Exception(errorBody['message'] ?? 'Error al descargar el PDF');
+      } catch (_) {
+        throw Exception('Error desconocido al descargar el PDF. Código: ${response.statusCode}');
+      }
+    }
+  }
 }

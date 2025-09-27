@@ -1,7 +1,7 @@
 // =============================================================================
-// ARCHIVO: features/rates/presentation/pages/rates_page.dart (VERSIÓN FINAL)
-// FUNCIÓN:   Pantalla principal que lista todas las tarifas, maneja la carga
-//            de datos y el refresco automático después de una acción.
+// ARCHIVO: features/rates/presentation/pages/rates_page.dart (CORRECCIÓN FINAL)
+// FUNCIÓN:   Se corrige la lógica de búsqueda para que utilice los nombres
+//            de propiedad correctos ('nombreServicio' y 'ciudad') del RateModel.
 // =============================================================================
 
 import 'package:flutter/material.dart';
@@ -22,51 +22,94 @@ class RatesPage extends StatefulWidget {
 
 class _RatesPageState extends State<RatesPage> {
   final ApiService _apiService = ApiService();
-  // Usamos un 'late' Future porque se inicializará en initState/fetchRates
-  late Future<List<RateModel>> _ratesFuture;
+  final TextEditingController _searchController = TextEditingController();
+
+  bool _isLoading = true;
+  String? _error;
+  List<RateModel> _allRates = [];
+  List<RateModel> _filteredRates = [];
 
   @override
   void initState() {
     super.initState();
-    // Cargamos los datos por primera vez al construir la pantalla
+    _searchController.addListener(_filterRates);
     _fetchRates();
   }
 
-  // Lógica centralizada para obtener o refrescar las tarifas
-  void _fetchRates() {
+  @override
+  void dispose() {
+    _searchController.removeListener(_filterRates);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchRates() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (authProvider.token != null) {
-      setState(() {
-        _ratesFuture = _apiService.getRates(authProvider.token!);
-      });
-    } else {
-      // Si no hay token, establecemos un futuro con error
-      setState(() {
-        _ratesFuture = Future.error('No se encontró token de autenticación.');
-      });
+    if (authProvider.token == null) {
+      if (mounted) {
+        setState(() {
+          _error = 'No se encontró token de autenticación.';
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
+    try {
+      final rates = await _apiService.getRates(authProvider.token!);
+      if (mounted) {
+        setState(() {
+          rates.sort((a, b) => b.id.compareTo(a.id));
+          _allRates = rates;
+          _filteredRates = rates;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  // Maneja la navegación a la página de detalles y espera un resultado
+  // --- CAMBIO CLAVE: Lógica de filtrado corregida ---
+  void _filterRates() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredRates = _allRates.where((rate) {
+        // Se utilizan los nombres de propiedad correctos del modelo
+        final serviceNameMatch = rate.nombreServicio.toLowerCase().contains(query);
+        final cityMatch = rate.ciudad.toLowerCase().contains(query);
+        return serviceNameMatch || cityMatch;
+      }).toList();
+    });
+  }
+
   void _navigateToDetail(RateModel rate) async {
-    // Navegamos y esperamos un posible resultado booleano (true si algo cambió)
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (context) => RateDetailPage(rate: rate)),
     );
-
     if (result == true && mounted) {
       _fetchRates();
     }
   }
-  // --- Maneja la navegación a la página de creación y el refresco ---
+
   void _navigateToCreate() async {
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (context) => const CreateRatePage()),
     );
-
-    // Si la página de creación devuelve 'true', refrescamos la lista.
     if (result == true && mounted) {
       _fetchRates();
     }
@@ -84,10 +127,10 @@ class _RatesPageState extends State<RatesPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 20),
-            // Barra de búsqueda (funcionalidad a implementar)
             TextField(
+              controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Buscar',
+                hintText: 'Buscar por servicio o ciudad',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.grey.shade200,
@@ -98,7 +141,6 @@ class _RatesPageState extends State<RatesPage> {
               ),
             ),
             const SizedBox(height: 20),
-            // Botón para crear una nueva tarifa
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -139,44 +181,49 @@ class _RatesPageState extends State<RatesPage> {
               ),
             ),
             const SizedBox(height: 20),
-            // Cuadrícula de tarifas que se actualiza según el estado del Future
             Expanded(
-              child: FutureBuilder<List<RateModel>>(
-                future: _ratesFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  }
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('No se encontraron tarifas.'));
-                  }
-
-                  final rates = snapshot.data!;
-                  return GridView.builder(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 15,
-                      mainAxisSpacing: 15,
-                      childAspectRatio: 0.9,
-                    ),
-                    itemCount: rates.length,
-                    itemBuilder: (context, index) {
-                      return RateCard(
-                        rate: rates[index],
-                        onTap: () => _navigateToDetail(rates[index]),
-                      );
-                    },
-                  );
-                },
-              ),
+              child: _buildRatesGrid(),
             ),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildRatesGrid() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(child: Text('Error: $_error'));
+    }
+    if (_filteredRates.isEmpty) {
+      return Center(
+        child: Text(
+          _searchController.text.isNotEmpty
+              ? 'No se encontraron resultados.'
+              : 'No hay tarifas creadas.',
+        ),
+      );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.only(bottom: 20),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 15,
+        mainAxisSpacing: 15,
+        childAspectRatio: 0.9,
+      ),
+      itemCount: _filteredRates.length,
+      itemBuilder: (context, index) {
+        final rate = _filteredRates[index];
+        return RateCard(
+          rate: rate,
+          onTap: () => _navigateToDetail(rate),
+        );
+      },
+    );
+  }
 }
+

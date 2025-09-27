@@ -1,4 +1,3 @@
-// --- PASO 1.2: Crear el modelo de datos para las Tarifas ---
 // ARCHIVO: lib/features/rates/domain/entities/rate_model.dart (NUEVO ARCHIVO)
 
 class RateModel {
