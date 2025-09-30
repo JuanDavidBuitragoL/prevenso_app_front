@@ -11,7 +11,7 @@ import 'package:provider/provider.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
-import 'package:open_file_plus/open_file_plus.dart';
+import 'package:open_filex/open_filex.dart';
 
 import '../../../../core/services/api_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -70,7 +70,7 @@ class _QuoteDetailPageState extends State<QuoteDetailPage> {
             ),
           );
         } else {
-          final result = await OpenFile.open(tempPath);
+          final result = await OpenFilex.open(tempPath);
           if (result.type != ResultType.done) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('No se pudo abrir el archivo: ${result.message}')),

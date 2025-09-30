@@ -3,12 +3,19 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; // <-- Importar la nueva librería
 import 'features/auth/presentation/pages/splash_page.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'core/theme/app_theme.dart';
 
 void main() {
+  // Asegura que los bindings de Flutter estén inicializados antes de runApp
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Establece el modo de UI inmersivo para ocultar las barras del sistema
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
   runApp(
     ChangeNotifierProvider(
       create: (context) => AuthProvider(),
