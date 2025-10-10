@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.grupoprevenso.app" "\0"
-            VALUE "FileDescription", "prevenso_app_front" "\0"
+            VALUE "CompanyName", "com.prevenso" "\0"
+            VALUE "FileDescription", "prevenso_app_front3" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "prevenso_app_front" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 com.grupoprevenso.app. All rights reserved." "\0"
-            VALUE "OriginalFilename", "prevenso_app_front.exe" "\0"
-            VALUE "ProductName", "prevenso_app_front" "\0"
+            VALUE "InternalName", "prevenso_app_front3" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025 com.prevenso. All rights reserved." "\0"
+            VALUE "OriginalFilename", "prevenso_app_front3.exe" "\0"
+            VALUE "ProductName", "prevenso_app_front3" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

@@ -1,0 +1,4 @@
+# Archivos que Shorebird NO debe modificar
+android/app/src/main/kotlin/
+android/app/src/main/java/
+ios/

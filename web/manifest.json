@@ -1,11 +1,11 @@
 {
-    "name": "prevenso_app_front",
-    "short_name": "prevenso_app_front",
+    "name": "prevenso_app_front3",
+    "short_name": "prevenso_app_front3",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "Cotizador para grupo prevenso",
+    "description": "A new Flutter project.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -1,14 +1,40 @@
-gradle-wrapper.jar
-/.gradle
-/captures/
-/gradlew
-/gradlew.bat
-/local.properties
-GeneratedPluginRegistrant.java
-.cxx/
 
-# Remember to never publicly share your keystore.
-# See https://flutter.dev/to/reference-keystore
-key.properties
-**/*.keystore
-**/*.jks
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+.idea/
+.vscode/
+*.iml
+
+/build/
+
+.packages
+.pub-cache/
+
+*.log
+coverage/
+
+
+android/captures/
+android/app/src/debug/
+android/app/src/profile/
+android/.gradle/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/key.properties
+android//*.keystore/*.jks
+
+
+ios/Pods/
+ios/Runner/Assets.xcassets/AppIcon.appiconset/
+ios/Flutter/App.framework
+ios/Flutter/engine.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/info.plist
+ios/Flutter/flutter_export_environment.sh
+ios/Runner.xcworkspace/
+
+.shorebird/ # <-- MUY IMPORTANTE: Ignora la caché de Shorebird.
