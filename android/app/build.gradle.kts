@@ -4,6 +4,22 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// --- CAMBIO CLAVE: Se añade la importación que faltaba ---
+import java.util.Properties
+
+// Se lee el archivo de propiedades locales usando la sintaxis correcta de Kotlin.
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { stream ->
+        localProperties.load(stream)
+    }
+}
+
+val flutterVersionCode = localProperties.getProperty("flutter.versionCode") ?: "1"
+val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0"
+
+
 android {
     namespace = "com.grupoprevenso.app.prevenso_app_front"
     compileSdk = 36
@@ -22,8 +38,8 @@ android {
         applicationId = "com.grupoprevenso.app.prevenso_app_front"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = flutterVersionCode.toInt()
+        versionName = flutterVersionName
         multiDexEnabled = true
     }
 
@@ -31,10 +47,8 @@ android {
         release {
             signingConfig = signingConfigs.getByName("debug")
 
-            // --- CAMBIO CLAVE: Añadir estas líneas ---
-            // Habilita la ofuscación y optimización de código.
+            // Configuración final y correcta para el modo release.
             isMinifyEnabled = true
-            // Le dice a ProGuard/R8 que use nuestro nuevo archivo de reglas.
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -57,5 +71,6 @@ flutter {
 }
 
 dependencies {
-    implementation("androidx.multidex:multidex:2.0.1")
+    // No son necesarias dependencias adicionales aquí.
 }
+
