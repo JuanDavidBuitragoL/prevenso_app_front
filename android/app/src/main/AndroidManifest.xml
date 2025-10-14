@@ -20,7 +20,7 @@
                      android:maxSdkVersion="29" />
 
     <application
-            android:label="prevenso_app_front"
+            android:label="Prevenso"
             android:name="${applicationName}"
             android:icon="@mipmap/ic_launcher"
             android:requestLegacyExternalStorage="true">

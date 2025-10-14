@@ -1,7 +1,8 @@
-// -------------------------------------------------------------------
-// features/home/presentation/widgets/action_buttons_grid.dart
-// --- ARCHIVO MODIFICADO ---
-// Se añade el nuevo botón "Editar servicios" a la cuadrícula.
+// =============================================================================
+// ARCHIVO: features/home/presentation/widgets/action_buttons_grid.dart (VERSIÓN FINAL)
+// FUNCIÓN:   Combina la navegación funcional con un layout responsivo usando Wrap,
+//            asegurando una visualización óptima en todos los dispositivos.
+// =============================================================================
 
 import 'package:flutter/material.dart';
 import '../../../clients/presentation/pages/clients_page.dart';
@@ -15,13 +16,12 @@ class ActionButtonsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 20,
-      crossAxisSpacing: 10,
-      childAspectRatio: 0.8,
+    // Usamos Wrap para que los botones se organicen horizontalmente y salten
+    // a la siguiente línea si no hay espacio. Es ideal para un layout responsivo.
+    return Wrap(
+      spacing: 24.0, // Espacio horizontal entre botones
+      runSpacing: 24.0, // Espacio vertical si hay más de una fila
+      alignment: WrapAlignment.center, // Centra los botones en el espacio disponible
       children: [
         // Botón Configurar Perfil
         GestureDetector(
@@ -33,8 +33,6 @@ class ActionButtonsGrid extends StatelessWidget {
         // Botón Editar Tarifas
         GestureDetector(
           onTap: () {
-            // Esta navegación debería cambiar el índice del MainScreen o usar un gestor de estado.
-            // Por ahora, lo dejamos como una navegación a una página independiente.
             Navigator.push(context, MaterialPageRoute(builder: (context) => const RatesPage()));
           },
           child: const _ActionButton(icon: Icons.edit_outlined, label: 'Editar tarifas', color: Color(0xFF88E2D6)),
@@ -42,7 +40,6 @@ class ActionButtonsGrid extends StatelessWidget {
         // Botón Crear Cotización
         GestureDetector(
           onTap: () {
-            // Navega a la nueva página de Cotizaciones
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const QuotesPage()),
@@ -53,7 +50,6 @@ class ActionButtonsGrid extends StatelessWidget {
         // Botón Editar Clientes
         GestureDetector(
           onTap: () {
-            // Navega a la nueva página de Clientes
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const ClientsPage()),
@@ -61,11 +57,9 @@ class ActionButtonsGrid extends StatelessWidget {
           },
           child: const _ActionButton(icon: Icons.business_outlined, label: 'Editar Clientes', color: Color(0xFFE2A9A9)),
         ),
-
-
+        // Botón Editar Servicios
         GestureDetector(
           onTap: () {
-            // Navega a la nueva página de Servicios
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const ServicesPage()),
@@ -78,7 +72,7 @@ class ActionButtonsGrid extends StatelessWidget {
   }
 }
 
-// El widget _ActionButton se mantiene igual.
+// Widget interno para cada botón
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -90,41 +84,46 @@ class _ActionButton extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.color,
-    this.iconColor = Colors.white,
+    this.iconColor = Colors.white, // Color de ícono por defecto es blanco
     this.hasBorder = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        Container(
-          width: 70,
-          height: 70,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            border: hasBorder ? Border.all(color: Colors.grey.shade300, width: 2) : null,
-            boxShadow: hasBorder ? null : [
-              BoxShadow(
-                color: color.withOpacity(0.4),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
+    // Se envuelve en un SizedBox para darle un ancho consistente a cada botón.
+    return SizedBox(
+      width: 140, // Ancho fijo para que los botones sean uniformes
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: hasBorder ? Border.all(color: Colors.grey.shade300, width: 2) : null,
+              boxShadow: hasBorder ? null : [
+                BoxShadow(
+                  color: color.withOpacity(0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Icon(icon, size: 35, color: iconColor),
           ),
-          child: Icon(icon, size: 35, color: iconColor),
-        ),
-        const SizedBox(height: 10),
-        Flexible(
-          child: Text(
+          const SizedBox(height: 10),
+          Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13, color: Colors.black54),
+            style: const TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w500),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
+

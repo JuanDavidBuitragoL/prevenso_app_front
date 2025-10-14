@@ -1,7 +1,7 @@
 // =============================================================================
 // ARCHIVO: features/rates/presentation/pages/rates_page.dart (CORRECCIÓN FINAL)
-// FUNCIÓN:   Se corrige la lógica de búsqueda para que utilice los nombres
-//            de propiedad correctos ('nombreServicio' y 'ciudad') del RateModel.
+// FUNCIÓN:   Integra la lógica de estado (búsqueda, carga de datos) con un
+//            diseño de cuadrícula completamente responsivo para móvil y escritorio.
 // =============================================================================
 
 import 'package:flutter/material.dart';
@@ -12,6 +12,7 @@ import '../../domain/entities/rate_model.dart';
 import '../widgets/rate_card.dart';
 import 'create_rate_page.dart';
 import 'rate_detail_page.dart';
+import '../../../../core/utils/app_assets.dart'; // Asegúrate de importar tus assets
 
 class RatesPage extends StatefulWidget {
   const RatesPage({super.key});
@@ -82,12 +83,10 @@ class _RatesPageState extends State<RatesPage> {
     }
   }
 
-  // --- CAMBIO CLAVE: Lógica de filtrado corregida ---
   void _filterRates() {
     final query = _searchController.text.toLowerCase();
     setState(() {
       _filteredRates = _allRates.where((rate) {
-        // Se utilizan los nombres de propiedad correctos del modelo
         final serviceNameMatch = rate.nombreServicio.toLowerCase().contains(query);
         final cityMatch = rate.ciudad.toLowerCase().contains(query);
         return serviceNameMatch || cityMatch;
@@ -119,72 +118,79 @@ class _RatesPageState extends State<RatesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tarifas'),
+        title: Image.asset(AppAssets.logo, height: 40),
+        backgroundColor: Colors.white,
+        elevation: 1.0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 20),
-            TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Buscar por servicio o ciudad',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.grey.shade200,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFF9A825), Color(0xFFF57F17)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.orange.withOpacity(0.4),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _navigateToCreate,
-                  borderRadius: BorderRadius.circular(30),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text(
-                          'Crear nueva tarifa',
-                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                      ],
+      body: Center( // Centra el contenido en la pantalla
+        child: ConstrainedBox( // Limita el ancho máximo del contenido
+          constraints: const BoxConstraints(maxWidth: 1400),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar por servicio o ciudad',
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: Colors.grey.shade200,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30.0),
+                      borderSide: BorderSide.none,
                     ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 20),
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFF9A825), Color(0xFFF57F17)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.orange.withOpacity(0.4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _navigateToCreate,
+                      borderRadius: BorderRadius.circular(30),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text(
+                              'Crear nueva tarifa',
+                              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: _buildRatesGrid(),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: _buildRatesGrid(),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -207,20 +213,30 @@ class _RatesPageState extends State<RatesPage> {
       );
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.only(bottom: 20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 15,
-        mainAxisSpacing: 15,
-        childAspectRatio: 0.9,
-      ),
-      itemCount: _filteredRates.length,
-      itemBuilder: (context, index) {
-        final rate = _filteredRates[index];
-        return RateCard(
-          rate: rate,
-          onTap: () => _navigateToDetail(rate),
+    // --- LÓGICA RESPONSIVA INTEGRADA ---
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // En pantallas anchas (PC), las tarjetas serán más anchas que altas (rectangulares).
+        // En pantallas estrechas (móvil), serán más altas que anchas (casi cuadradas).
+        final double aspectRatio = constraints.maxWidth > 700 ? 1.4 : 0.85;
+
+        return GridView.builder(
+          padding: const EdgeInsets.only(bottom: 20),
+          // Se usa un delegate que calcula las columnas automáticamente.
+          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 280, // Ancho ideal para cada tarjeta.
+            mainAxisSpacing: 20,
+            crossAxisSpacing: 20,
+            childAspectRatio: aspectRatio, // Define la forma de la tarjeta.
+          ),
+          itemCount: _filteredRates.length,
+          itemBuilder: (context, index) {
+            final rate = _filteredRates[index];
+            return RateCard(
+              rate: rate,
+              onTap: () => _navigateToDetail(rate),
+            );
+          },
         );
       },
     );

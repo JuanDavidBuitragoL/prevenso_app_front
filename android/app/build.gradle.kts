@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.grupoprevenso.app.prevenso_app_front"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -21,7 +21,7 @@ android {
     defaultConfig {
         applicationId = "com.grupoprevenso.app.prevenso_app_front"
         minSdk = flutter.minSdkVersion
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
         multiDexEnabled = true
@@ -33,8 +33,7 @@ android {
 
             // --- CAMBIO CLAVE: Añadir estas líneas ---
             // Habilita la ofuscación y optimización de código.
-            isMinifyEnabled = false
-            isShrinkResources = false
+            isMinifyEnabled = true
             // Le dice a ProGuard/R8 que use nuestro nuevo archivo de reglas.
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }

@@ -10,7 +10,8 @@ import 'package:provider/provider.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
-import 'package:open_filex/open_filex.dart';
+import 'package:open_file/open_file.dart';
+
 // permission_handler ya no es necesario
 
 import '../../../../core/services/api_service.dart';
@@ -51,10 +52,12 @@ class _QuoteDetailPageState extends State<QuoteDetailPage> {
       if (mounted) {
         Navigator.of(context).pop();
 
-        final result = await OpenFilex.open(filePath);
+        final result = await OpenFile.open(filePath);
+
         if (result.type != ResultType.done) {
-          throw Exception('No se pudo abrir el archivo: ${result.message}');
+          print("No se pudo abrir el archivo: ${result.message}");
         }
+
       }
     } catch (e) {
       if (mounted) {

@@ -1,7 +1,8 @@
 // =============================================================================
-// ARCHIVO: features/rates/presentation/widgets/rate_card.dart (VERSIÓN CORREGIDA)
-// FUNCIÓN:   Componente visual para una tarjeta de tarifa. Se ha reestructurado
-//            con un Expanded para evitar errores de desbordamiento de layout.
+// ARCHIVO: features/rates/presentation/widgets/rate_card.dart (VERSIÓN DEFINITIVA)
+// FUNCIÓN:   Componente visual para una tarjeta de tarifa. Se ha añadido un
+//            widget Flexible para que el nombre del servicio se adapte y evite
+//            desbordamientos en pantallas pequeñas.
 // =============================================================================
 
 import 'package:flutter/material.dart';
@@ -60,21 +61,25 @@ class RateCard extends StatelessWidget {
                 color: const Color(0xFF00C6AD),
               ),
             ),
-            // --- CORRECCIÓN: Se usa Expanded para que el contenido de texto ocupe el espacio restante ---
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end, // Alinea el contenido a la parte inferior del espacio
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text(
-                    rate.nombreServicio,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                  // --- SOLUCIÓN: Se envuelve el Text en un Flexible ---
+                  // Esto permite que el texto del nombre del servicio se encoja si es necesario,
+                  // evitando que la columna se desborde en pantallas pequeñas.
+                  Flexible(
+                    child: Text(
+                      rate.nombreServicio,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Row(

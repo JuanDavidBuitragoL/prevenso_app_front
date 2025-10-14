@@ -1,9 +1,11 @@
-// -------------------------------------------------------------------
-// features/main_screen.dart
-// --- ARCHIVO MODIFICADO ---
-// Se simplifica la lógica de navegación del BottomNavigationBar.
+// =============================================================================
+// ARCHIVO: features/main_screen.dart (VERSIÓN CORREGIDA)
+// FUNCIÓN:   Corrige la lógica de navegación para asegurar que al presionar
+//            "atrás" siempre se regrese a la pantalla de inicio.
+// =============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:prevenso_app_front/features/quotes/presentation/pages/quotes_page.dart';
 import 'home/presentation/pages/home_page.dart';
 import 'rates/presentation/pages/rates_page.dart';
 import '../core/utils/app_assets.dart';
@@ -16,24 +18,30 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
+  // El índice seleccionado siempre será 0 (Inicio), ya que las otras
+  // opciones navegan a pantallas completamente nuevas.
+  final int _selectedIndex = 0;
 
-  // La lista ahora solo necesita la HomePage. Las otras son placeholders.
+  // --- CAMBIO CLAVE: La lista ahora solo contiene la HomePage ---
+  // Los placeholders se eliminan, ya que eran la causa del problema.
   static const List<Widget> _widgetOptions = <Widget>[
     HomePage(),
-    Center(child: Text('Placeholder para Tarifas')), // Este no se usará
-    Center(child: Text('Placeholder para Cotizar')), // Este no se usará
   ];
 
+  // --- CAMBIO CLAVE: La lógica de navegación se simplifica ---
   void _onItemTapped(int index) {
-    if (index == 1) {
-      // Si se presiona el segundo botón, navegamos a la página de Tarifas.
-      Navigator.push(context, MaterialPageRoute(builder: (context) => const RatesPage()));
-    } else {
-      // Para los otros botones, solo cambiamos el índice (si hubiera más páginas principales).
-      setState(() {
-        _selectedIndex = index;
-      });
+    switch (index) {
+      case 0:
+      // Si se presiona "Inicio" y ya estamos en Inicio, no hacemos nada.
+        break;
+      case 1:
+      // Navegamos a la página de Tarifas como una nueva pantalla.
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const RatesPage()));
+        break;
+      case 2:
+      // Navegamos a la página de Cotizaciones como una nueva pantalla.
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const QuotesPage()));
+        break;
     }
   }
 
@@ -49,7 +57,8 @@ class _MainScreenState extends State<MainScreen> {
         ),
         automaticallyImplyLeading: false,
       ),
-      body: _widgetOptions.elementAt(_selectedIndex),
+      // El cuerpo siempre muestra el widget en la posición 0 (HomePage)
+      body: _widgetOptions.elementAt(0),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -58,16 +67,17 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Inicio',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.edit_outlined),
-            activeIcon: Icon(Icons.edit),
+            icon: Icon(Icons.monetization_on_outlined), // Ícono cambiado para claridad
+            activeIcon: Icon(Icons.monetization_on),
             label: 'Tarifas',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.add_box_outlined),
-            activeIcon: Icon(Icons.add_box),
+            icon: Icon(Icons.request_quote_outlined), // Ícono cambiado para claridad
+            activeIcon: Icon(Icons.request_quote),
             label: 'Cotizar',
           ),
         ],
+        // El ícono seleccionado siempre será el de "Inicio"
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         backgroundColor: const Color(0xFFF0F0F0),
