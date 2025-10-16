@@ -3,7 +3,7 @@ description: "A new Flutter project."
 
 publish_to: 'none'
 
-version: 1.0.1+1
+version: 1.0.1+4
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -13,6 +13,7 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+
 
   package_info_plus: ^8.0.0 # Para obtener la versión actual de la app
   url_launcher: ^6.3.0
@@ -35,6 +36,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  flutter_launcher_icons: ^0.13.1
+
   # --- DEPENDENCIAS DE DESARROLLO (Herramientas del garaje) ---
   flutter_lints: ^4.0.0
 
@@ -42,3 +45,11 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+
+flutter_launcher_icons:
+  android: true    # Generar íconos para Android
+  ios: false       # No necesitamos iOS por ahora
+  windows:
+    generate: true # Generar íconos para Windows
+    icon_size: 48  # Tamaño estándar para el ícono de Windows
+  image_path: "launcher_icon/logo.png"
