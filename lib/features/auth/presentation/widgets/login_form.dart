@@ -1,8 +1,4 @@
-// =============================================================================
-// ARCHIVO: features/auth/presentation/widgets/login_form.dart (VERSIÓN FINAL)
-// FUNCIÓN:   Añade el enlace de "Olvidaste tu contraseña" y navega a la
 //            pantalla de recuperación sin pasarle ningún email.
-// =============================================================================
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -154,8 +150,7 @@ class _LoginFormState extends State<LoginForm> {
               ),
               const SizedBox(height: 8),
 
-              // --- CAMBIO CLAVE: Enlace para recuperar contraseña ---
-              Align(
+                            Align(
                 alignment: Alignment.centerRight,
                 child: GestureDetector(
                   onTap: () {

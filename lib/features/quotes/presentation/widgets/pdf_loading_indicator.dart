@@ -1,8 +1,4 @@
-// =============================================================================
-// ARCHIVO: lib/features/quotes/presentation/widgets/pdf_loading_indicator.dart (NUEVO ARCHIVO)
-// FUNCIÓN:   Un widget de carga personalizado y reutilizable que muestra una
 //            animación de engranaje giratorio y mensajes informativos.
-// =============================================================================
 
 import 'package:flutter/material.dart';
 

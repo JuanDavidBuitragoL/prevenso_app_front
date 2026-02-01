@@ -1,7 +1,3 @@
-// -------------------------------------------------------------------
-// features/auth/domain/entities/user_entity.dart
-// La representación "pura" de un usuario en la lógica de negocio.
-
 import 'package:equatable/equatable.dart';
 
 class UserEntity extends Equatable {

@@ -1,8 +1,4 @@
-// =============================================================================
-// ARCHIVO: lib/features/clients/presentation/pages/clients_page.dart (VERSIÓN FINAL)
-// FUNCIÓN:   Pantalla principal que lista todos los clientes, maneja la carga
 //            de datos, el refresco automático y la búsqueda en tiempo real.
-// =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

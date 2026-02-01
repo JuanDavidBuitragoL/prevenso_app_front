@@ -1,4 +1,3 @@
-// ARCHIVO: lib/features/rates/domain/entities/rate_model.dart (NUEVO ARCHIVO)
 
 class RateModel {
   final int id;

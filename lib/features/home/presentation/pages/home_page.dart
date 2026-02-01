@@ -1,4 +1,3 @@
-// -------------------------------------------------------------------
 // features/home/presentation/pages/home_page.dart
 // Se ajusta el espaciado para la nueva AppBar y se agrega
 // verificación automática de actualizaciones.
@@ -68,8 +67,7 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 20),
-                // --- Saludo Dinámico ---
-                Row(
+                                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(

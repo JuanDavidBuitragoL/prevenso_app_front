@@ -1,8 +1,3 @@
-// =============================================================================
-// ARCHIVO: features/main_screen.dart (VERSIÓN CORREGIDA)
-// FUNCIÓN:   Corrige la lógica de navegación para asegurar que al presionar
-//            "atrás" siempre se regrese a la pantalla de inicio.
-// =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:prevenso_app_front/features/quotes/presentation/pages/quotes_page.dart';
@@ -18,29 +13,40 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  // El índice seleccionado siempre será 0 (Inicio), ya que las otras
-  // opciones navegan a pantallas completamente nuevas.
   final int _selectedIndex = 0;
 
-  // --- CAMBIO CLAVE: La lista ahora solo contiene la HomePage ---
-  // Los placeholders se eliminan, ya que eran la causa del problema.
-  static const List<Widget> _widgetOptions = <Widget>[
-    HomePage(),
-  ];
+  // 🔑 Key para forzar la reconstrucción del HomePage
+  Key _homePageKey = UniqueKey();
 
-  // --- CAMBIO CLAVE: La lógica de navegación se simplifica ---
-  void _onItemTapped(int index) {
+  void _onItemTapped(int index) async {
     switch (index) {
       case 0:
-      // Si se presiona "Inicio" y ya estamos en Inicio, no hacemos nada.
+      // Si se presiona "Inicio" y ya estamos en Inicio, refrescamos
+        setState(() {
+          _homePageKey = UniqueKey(); // Forzar reconstrucción
+        });
         break;
       case 1:
-      // Navegamos a la página de Tarifas como una nueva pantalla.
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const RatesPage()));
+      // Navegamos a la página de Tarifas
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const RatesPage()),
+        );
+        // 🔄 Al regresar, refrescamos el HomePage
+        setState(() {
+          _homePageKey = UniqueKey();
+        });
         break;
       case 2:
-      // Navegamos a la página de Cotizaciones como una nueva pantalla.
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const QuotesPage()));
+      // Navegamos a la página de Cotizaciones
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const QuotesPage()),
+        );
+        // 🔄 Al regresar, refrescamos el HomePage
+        setState(() {
+          _homePageKey = UniqueKey();
+        });
         break;
     }
   }
@@ -57,8 +63,8 @@ class _MainScreenState extends State<MainScreen> {
         ),
         automaticallyImplyLeading: false,
       ),
-      // El cuerpo siempre muestra el widget en la posición 0 (HomePage)
-      body: _widgetOptions.elementAt(0),
+      // 🔑 Usamos la key para forzar reconstrucción
+      body: HomePage(key: _homePageKey),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -67,17 +73,16 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Inicio',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.monetization_on_outlined), // Ícono cambiado para claridad
+            icon: Icon(Icons.monetization_on_outlined),
             activeIcon: Icon(Icons.monetization_on),
             label: 'Tarifas',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.request_quote_outlined), // Ícono cambiado para claridad
+            icon: Icon(Icons.request_quote_outlined),
             activeIcon: Icon(Icons.request_quote),
             label: 'Cotizar',
           ),
         ],
-        // El ícono seleccionado siempre será el de "Inicio"
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         backgroundColor: const Color(0xFFF0F0F0),

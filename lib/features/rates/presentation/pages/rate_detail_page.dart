@@ -1,8 +1,4 @@
-// =============================================================================
-// ARCHIVO: features/rates/presentation/pages/rate_detail_page.dart (VERSIÓN FINAL)
-// FUNCIÓN:   Muestra los detalles de una tarifa y maneja las acciones de
 //            edición y eliminación, devolviendo un resultado a la página anterior.
-// =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';

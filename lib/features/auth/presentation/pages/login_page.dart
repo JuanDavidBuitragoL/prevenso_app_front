@@ -1,8 +1,3 @@
-// -------------------------------------------------------------------
-// features/auth/presentation/pages/login_page.dart
-// --- ARCHIVO MODIFICADO ---
-// La página ahora es responsable de posicionar el logo fijo en la parte superior.
-
 import 'package:flutter/material.dart';
 import '../../../../core/utils/app_assets.dart';
 import '../widgets/curved_background.dart';
@@ -22,15 +17,12 @@ class LoginPage extends StatelessWidget {
         width: screenSize.width,
         child: const Stack(
           children: [
-            // Fondo y formulario siguen como antes
             CurvedBackground(),
             LoginForm(),
 
-            // El logo ahora es un widget fijo dentro del Stack.
-            // No se moverá al hacer scroll en el formulario.
             Positioned(
-              top: 20, // Espacio desde la parte superior (considerando la barra de estado)
-              left: 20, // Espacio desde la izquierda (alineado con el formulario)
+              top: 20,
+              left: 20,
               child: Image(
                 image: AssetImage(AppAssets.logo),
                 height: 45,

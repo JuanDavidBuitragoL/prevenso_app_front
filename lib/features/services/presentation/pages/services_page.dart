@@ -1,8 +1,5 @@
-// =============================================================================
-// ARCHIVO: lib/features/services/presentation/pages/services_page.dart (VERSIÓN FINAL)
-// FUNCIÓN:   Pantalla que lista los servicios, maneja la carga de datos,
+
 //            el refresco y ahora también el filtrado en tiempo real.
-// =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -25,8 +22,7 @@ class _ServicesPageState extends State<ServicesPage> {
   final ApiService _apiService = ApiService();
   final _searchController = TextEditingController();
 
-  // --- ESTADOS PARA LA BÚSQUEDA ---
-  List<ServiceModel> _allServices = []; // Almacena la lista completa y original de servicios
+    List<ServiceModel> _allServices = []; // Almacena la lista completa y original de servicios
   List<ServiceModel> _filteredServices = []; // Almacena la lista filtrada que se muestra en la UI
   bool _isLoading = true;
   String? _error;
@@ -44,6 +40,18 @@ class _ServicesPageState extends State<ServicesPage> {
     _searchController.removeListener(_filterServices);
     _searchController.dispose();
     super.dispose();
+  }
+
+  // Función para remover acentos y normalizar texto
+  String _removeAccents(String text) {
+    const accents = 'ÀÁÂÃÄÅàáâãäåÒÓÔÕÖØòóôõöøÈÉÊËèéêëÌÍÎÏìíîïÙÚÛÜùúûüÿÑñÇç';
+    const withoutAccents = 'AAAAAAaaaaaaOOOOOOooooooEEEEeeeeIIIIiiiiUUUUuuuuyNnCc';
+
+    String result = text;
+    for (int i = 0; i < accents.length; i++) {
+      result = result.replaceAll(accents[i], withoutAccents[i]);
+    }
+    return result;
   }
 
   // Carga la lista inicial de servicios desde la API
@@ -80,24 +88,22 @@ class _ServicesPageState extends State<ServicesPage> {
     }
   }
 
-  // --- FUNCIÓN DE FILTRADO: Filtra la lista de servicios ---
-  void _filterServices() {
-    final query = _searchController.text.toLowerCase();
+    void _filterServices() {
+    final query = _removeAccents(_searchController.text.toLowerCase());
     setState(() {
       // Si la barra de búsqueda está vacía, mostramos todos los servicios.
       if (query.isEmpty) {
         _filteredServices = _allServices;
       } else {
-        // Si hay texto, filtramos la lista original (_allServices)
+        // Si hay texto, filtramos la lista original (_allServices) normalizando el nombre del servicio
         _filteredServices = _allServices
-            .where((service) => service.nombre.toLowerCase().contains(query))
+            .where((service) => _removeAccents(service.nombre.toLowerCase()).contains(query))
             .toList();
       }
     });
   }
 
-  // --- MÉTODOS DE NAVEGACIÓN ---
-  void _navigateToCreate() async {
+    void _navigateToCreate() async {
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (context) => const CreateServicePage()),
@@ -127,7 +133,6 @@ class _ServicesPageState extends State<ServicesPage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -147,8 +152,7 @@ class _ServicesPageState extends State<ServicesPage> {
               style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-            // --- Conectamos el TextField al controlador de búsqueda ---
-            TextField(
+                        TextField(
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Buscar servicio por nombre...',
@@ -211,8 +215,7 @@ class _ServicesPageState extends State<ServicesPage> {
     );
   }
 
-  // --- WIDGET HELPER: Construye la lista basándose en el estado ---
-  Widget _buildServiceList() {
+    Widget _buildServiceList() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }

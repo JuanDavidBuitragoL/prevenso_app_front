@@ -1,4 +1,3 @@
-// -------------------------------------------------------------------
 // features/services/presentation/pages/create_service_page.dart
 // La pantalla para crear un nuevo servicio desde cero.
 

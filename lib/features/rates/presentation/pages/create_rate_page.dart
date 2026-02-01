@@ -1,5 +1,3 @@
-// --- PASO 2.1: Refactorizar CreateRatePage para ser dinámica y funcional ---
-// ARCHIVO: lib/features/rates/presentation/pages/create_rate_page.dart (VERSIÓN FINAL)
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -18,25 +16,44 @@ class _CreateRatePageState extends State<CreateRatePage> {
   final _formKey = GlobalKey<FormState>();
   final ApiService _apiService = ApiService();
 
-  // Controladores para los campos del formulario
+  // Controladores
   final _cityController = TextEditingController();
   final _valueController = TextEditingController();
+  // Controlador para mostrar el nombre del servicio seleccionado en el input
+  final _serviceDisplayController = TextEditingController();
 
-  // Variables para manejar el estado del dropdown de servicios
+  // Variables de Estado
   int? _selectedServiceId;
-  late Future<List<ServiceModel>> _servicesFuture;
-
-  bool _isLoading = false;
+  List<ServiceModel> _allServices = []; // Lista completa en memoria
+  bool _isLoadingServices = true;
+  bool _isLoadingSubmit = false;
 
   @override
   void initState() {
     super.initState();
-    // Cargamos la lista de servicios al iniciar la pantalla
+    _loadServices();
+  }
+
+  // Carga inicial de servicios
+  Future<void> _loadServices() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.token != null) {
-      _servicesFuture = _apiService.getServices(authProvider.token!);
-    } else {
-      _servicesFuture = Future.error('Error de autenticación');
+      try {
+        final services = await _apiService.getServices(authProvider.token!);
+        if (mounted) {
+          setState(() {
+            _allServices = services;
+            _isLoadingServices = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoadingServices = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error cargando servicios')),
+          );
+        }
+      }
     }
   }
 
@@ -44,17 +61,69 @@ class _CreateRatePageState extends State<CreateRatePage> {
   void dispose() {
     _cityController.dispose();
     _valueController.dispose();
+    _serviceDisplayController.dispose();
     super.dispose();
   }
 
-  // --- Lógica para crear la nueva tarifa en el backend ---
+    // Convierte "Camión" -> "camion" para facilitar la búsqueda
+  String _normalize(String text) {
+    return text
+        .toLowerCase()
+        .replaceAll(RegExp(r'[áäâà]'), 'a')
+        .replaceAll(RegExp(r'[éëêè]'), 'e')
+        .replaceAll(RegExp(r'[íïîì]'), 'i')
+        .replaceAll(RegExp(r'[óöôò]'), 'o')
+        .replaceAll(RegExp(r'[úüûù]'), 'u')
+        .replaceAll(RegExp(r'ñ'), 'n');
+  }
+
+    void _openServiceSelector() {
+    if (_isLoadingServices) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // Permite que el modal suba con el teclado
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.9,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return _ServiceSearchModal(
+              services: _allServices,
+              scrollController: scrollController,
+              onServiceSelected: (selectedService) {
+                setState(() {
+                  _selectedServiceId = selectedService.id;
+                  _serviceDisplayController.text = selectedService.nombre;
+                });
+                Navigator.pop(context); // Cerrar modal
+              },
+              normalizeFunction: _normalize,
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _createRate() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_selectedServiceId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debes seleccionar un servicio')),
+      );
+      return;
+    }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.token == null) return;
 
-    setState(() => _isLoading = true);
+    setState(() => _isLoadingSubmit = true);
 
     try {
       await _apiService.createRate(
@@ -66,21 +135,22 @@ class _CreateRatePageState extends State<CreateRatePage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tarifa creada con éxito'), backgroundColor: Colors.green),
+          const SnackBar(
+              content: Text('Tarifa creada con éxito'),
+              backgroundColor: Colors.green),
         );
-        // Regresamos a la pantalla anterior, devolviendo 'true' para que se refresque
         Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text(e.toString().replaceAll('Exception: ', '')),
+              backgroundColor: Colors.red),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoadingSubmit = false);
     }
   }
 
@@ -106,49 +176,39 @@ class _CreateRatePageState extends State<CreateRatePage> {
                 ),
                 const SizedBox(height: 30),
 
-                // --- Dropdown para seleccionar el servicio ---
-                const Text('Servicio', style: TextStyle(color: Colors.black54, fontSize: 16)),
+                                const Text('Servicio',
+                    style: TextStyle(color: Colors.black54, fontSize: 16)),
                 const SizedBox(height: 8),
-                FutureBuilder<List<ServiceModel>>(
-                  future: _servicesFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-                      return const Text('No se pudieron cargar los servicios.');
-                    }
-
-                    final services = snapshot.data!;
-                    return DropdownButtonFormField<int>(
-                      value: _selectedServiceId,
-                      isExpanded: true,
+                InkWell(
+                  onTap: _openServiceSelector,
+                  child: IgnorePointer(
+                    // Ignoramos toques directos para manejarlo con el InkWell
+                    child: TextFormField(
+                      controller: _serviceDisplayController,
+                      readOnly: true, // No se puede escribir directamente aquí
                       decoration: InputDecoration(
-                        hintText: 'Selecciona un servicio',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
+                        hintText: _isLoadingServices
+                            ? 'Cargando servicios...'
+                            : 'Selecciona un servicio',
+                        suffixIcon: _isLoadingServices
+                            ? const Padding(
+                          padding: EdgeInsets.all(12.0),
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                            : const Icon(Icons.arrow_drop_down),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12.0)),
                       ),
-                      items: services.map((service) {
-                        return DropdownMenuItem<int>(
-                          value: service.id,
-                          child: Text(service.nombre),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedServiceId = value;
-                        });
-                      },
-                      validator: (value) => value == null ? 'Debes seleccionar un servicio' : null,
-                    );
-                  },
+                      validator: (value) => _selectedServiceId == null
+                          ? 'Debes seleccionar un servicio'
+                          : null,
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 20),
 
-                // --- Campo para la Ciudad ---
+                const SizedBox(height: 20),
                 _buildTextField(label: 'Ciudad', controller: _cityController),
                 const SizedBox(height: 20),
-
-                // --- Campo para el Costo ---
                 _buildTextField(
                   label: 'Costo',
                   controller: _valueController,
@@ -157,26 +217,31 @@ class _CreateRatePageState extends State<CreateRatePage> {
                 ),
                 const SizedBox(height: 50),
 
-                // Botón de Crear Tarifa
+                // Botón Guardar
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _createRate,
+                    onPressed: _isLoadingSubmit ? null : _createRate,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF27AE60), // Verde
+                      backgroundColor: const Color(0xFF27AE60),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30.0),
                       ),
                     ),
-                    child: _isLoading
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text('Crear tarifa', style: TextStyle(fontSize: 16)),
+                    child: _isLoadingSubmit
+                        ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                        : const Text('Crear tarifa',
+                        style: TextStyle(fontSize: 16)),
                   ),
                 ),
                 const SizedBox(height: 16),
 
-                // Botón de Cancelar
+                // Botón Cancelar
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
@@ -189,7 +254,8 @@ class _CreateRatePageState extends State<CreateRatePage> {
                         borderRadius: BorderRadius.circular(30.0),
                       ),
                     ),
-                    child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
+                    child:
+                    const Text('Cancelar', style: TextStyle(fontSize: 16)),
                   ),
                 ),
               ],
@@ -200,7 +266,6 @@ class _CreateRatePageState extends State<CreateRatePage> {
     );
   }
 
-  // Widget helper para construir los campos de texto
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
@@ -210,24 +275,133 @@ class _CreateRatePageState extends State<CreateRatePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.black54, fontSize: 16)),
+        Text(label,
+            style: const TextStyle(color: Colors.black54, fontSize: 16)),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
           decoration: InputDecoration(
             prefixText: prefixText,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
+            border:
+            OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
           ),
           validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Este campo no puede estar vacío';
-            }
-            if (keyboardType == TextInputType.number && double.tryParse(value) == null) {
-              return 'Por favor, ingresa un número válido';
-            }
+            if (value == null || value.trim().isEmpty) return 'Requerido';
+            if (keyboardType == TextInputType.number &&
+                double.tryParse(value) == null) return 'Inválido';
             return null;
           },
+        ),
+      ],
+    );
+  }
+}
+
+class _ServiceSearchModal extends StatefulWidget {
+  final List<ServiceModel> services;
+  final ScrollController scrollController;
+  final Function(ServiceModel) onServiceSelected;
+  final String Function(String) normalizeFunction;
+
+  const _ServiceSearchModal({
+    required this.services,
+    required this.scrollController,
+    required this.onServiceSelected,
+    required this.normalizeFunction,
+  });
+
+  @override
+  State<_ServiceSearchModal> createState() => _ServiceSearchModalState();
+}
+
+class _ServiceSearchModalState extends State<_ServiceSearchModal> {
+  List<ServiceModel> _filteredServices = [];
+  final _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredServices = widget.services;
+  }
+
+  void _filterList(String query) {
+    if (query.isEmpty) {
+      setState(() => _filteredServices = widget.services);
+      return;
+    }
+
+    final normalizedQuery = widget.normalizeFunction(query);
+
+    setState(() {
+      _filteredServices = widget.services.where((service) {
+        final normalizedName = widget.normalizeFunction(service.nombre);
+        // Búsqueda "fuzzy": ¿El nombre contiene la búsqueda normalizada?
+        return normalizedName.contains(normalizedQuery);
+      }).toList();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Cabecera del Modal
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Selecciona un Servicio',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              // Buscador interno
+              TextField(
+                controller: _searchController,
+                autofocus: true, // Abre el teclado automáticamente
+                onChanged: _filterList,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.search),
+                  hintText: 'Buscar (ej. Camion, Grua...)',
+                  filled: true,
+                  fillColor: Colors.grey[100],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        // Lista Filtrada
+        Expanded(
+          child: _filteredServices.isEmpty
+              ? const Center(child: Text('No se encontraron servicios'))
+              : ListView.builder(
+            controller: widget.scrollController,
+            itemCount: _filteredServices.length,
+            itemBuilder: (context, index) {
+              final service = _filteredServices[index];
+              return ListTile(
+                title: Text(service.nombre),
+                onTap: () => widget.onServiceSelected(service),
+                leading: const Icon(Icons.work_outline, color: Colors.grey),
+              );
+            },
+          ),
         ),
       ],
     );

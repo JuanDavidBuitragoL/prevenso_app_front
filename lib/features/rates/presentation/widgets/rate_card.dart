@@ -1,9 +1,3 @@
-// =============================================================================
-// ARCHIVO: features/rates/presentation/widgets/rate_card.dart (VERSIÓN DEFINITIVA)
-// FUNCIÓN:   Componente visual para una tarjeta de tarifa. Se ha añadido un
-//            widget Flexible para que el nombre del servicio se adapte y evite
-//            desbordamientos en pantallas pequeñas.
-// =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -66,8 +60,7 @@ class RateCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  // --- SOLUCIÓN: Se envuelve el Text en un Flexible ---
-                  // Esto permite que el texto del nombre del servicio se encoja si es necesario,
+                                    // Esto permite que el texto del nombre del servicio se encoja si es necesario,
                   // evitando que la columna se desborde en pantallas pequeñas.
                   Flexible(
                     child: Text(

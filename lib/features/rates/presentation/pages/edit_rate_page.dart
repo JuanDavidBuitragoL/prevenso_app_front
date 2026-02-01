@@ -1,4 +1,3 @@
-// -------------------------------------------------------------------
 // features/rates/presentation/pages/edit_rate_page.dart
 // La pantalla para editar los detalles de una tarifa existente.
 
@@ -47,8 +46,7 @@ class _EditRatePageState extends State<EditRatePage> {
     super.dispose();
   }
 
-  // --- Lógica para guardar los cambios en el backend ---
-  Future<void> _saveChanges() async {
+    Future<void> _saveChanges() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);

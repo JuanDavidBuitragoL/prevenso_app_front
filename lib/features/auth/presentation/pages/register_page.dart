@@ -1,7 +1,3 @@
-// -------------------------------------------------------------------
-// features/auth/presentation/pages/register_page.dart
-// La pantalla para que un nuevo usuario pueda registrarse en la aplicación.
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -19,7 +15,6 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  // Controladores para todos los campos del formulario
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -35,8 +30,7 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  // --- Lógica de registro conectada al backend ---
-  Future<void> _register() async {
+    Future<void> _register() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
@@ -51,7 +45,6 @@ class _RegisterPageState extends State<RegisterPage> {
         password: _passwordController.text,
       );
 
-      // Si el registro y el login automático son exitosos, navega a la pantalla principal
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const MainScreen()),
@@ -59,7 +52,6 @@ class _RegisterPageState extends State<RegisterPage> {
         );
       }
     } catch (e) {
-      // Muestra el error del backend (ej. "El correo ya está en uso")
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -105,7 +97,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     Text('Regístrate', style: textTheme.displayLarge),
                     const SizedBox(height: 30),
 
-                    // Campo de Nombre con su controlador
                     Text('Nombre', style: textTheme.bodyLarge),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -115,7 +106,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Campo de Correo con su controlador
                     Text('Correo', style: textTheme.bodyLarge),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -130,7 +120,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Campo de Contraseña
                     Text('Contraseña', style: textTheme.bodyLarge),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -145,7 +134,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Campo de Confirmar Contraseña
                     Text('Confirma la contraseña', style: textTheme.bodyLarge),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -159,7 +147,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     const SizedBox(height: 40),
 
-                    // Botón de Registro
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -175,7 +162,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Enlace para Iniciar Sesión
                     Center(
                       child: RichText(
                         text: TextSpan(

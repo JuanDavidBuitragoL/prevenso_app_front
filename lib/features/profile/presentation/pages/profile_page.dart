@@ -1,8 +1,4 @@
-// =============================================================================
-// ARCHIVO: features/profile/presentation/pages/profile_page.dart (VERSIÓN FINAL)
-// FUNCIÓN:   Inicia el flujo de cambio de contraseña, ahora pasando el email
 //            del usuario actual a la pantalla de recuperación.
-// =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -113,8 +109,7 @@ class ProfilePage extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      // --- CAMBIO CLAVE: Navega a la página de recuperación CON el email ---
-                      Navigator.push(
+                                            Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => ForgotPasswordPage(

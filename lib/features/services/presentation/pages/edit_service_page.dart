@@ -1,4 +1,3 @@
-// -------------------------------------------------------------------
 // features/services/presentation/pages/edit_service_page.dart
 // La pantalla para editar los detalles de un servicio existente.
 

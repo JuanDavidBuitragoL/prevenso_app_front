@@ -1,4 +1,3 @@
-// -------------------------------------------------------------------
 // features/profile/presentation/widgets/profile_avatar.dart
 // Un widget personalizado para mostrar el avatar con círculos decorativos.
 

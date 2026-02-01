@@ -1,4 +1,3 @@
-// ARCHIVO: lib/features/clients/presentation/pages/client_detail_page.dart (VERSIÓN CORREGIDA)
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -86,8 +85,7 @@ class _ClientDetailPageState extends State<ClientDetailPage> {
         backgroundColor: Colors.white,
         elevation: 1.0,
       ),
-      // --- CORRECCIÓN: Se envuelve el contenido en un SingleChildScrollView ---
-      body: SingleChildScrollView(
+            body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
@@ -104,8 +102,7 @@ class _ClientDetailPageState extends State<ClientDetailPage> {
               _InfoField(label: 'Teléfono', value: widget.client.telefono ?? 'No registrado'),
               const SizedBox(height: 20),
               _InfoField(label: 'Correo', value: widget.client.email ?? 'No registrado'),
-              // --- CORRECCIÓN: Se reemplaza Spacer por un SizedBox para un espaciado fijo ---
-              const SizedBox(height: 40),
+                            const SizedBox(height: 40),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(

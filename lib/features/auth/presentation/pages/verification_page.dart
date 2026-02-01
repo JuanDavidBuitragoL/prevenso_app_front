@@ -1,9 +1,3 @@
-// =============================================================================
-// ARCHIVO: features/auth/presentation/pages/verification_page.dart (VERSIÓN FINAL)
-// FUNCIÓN:   Pantalla para introducir el código. Ahora recibe el email para
-//            saber a quién pertenece el token.
-// =============================================================================
-
 import 'package:flutter/material.dart';
 import 'reset_password_page.dart';
 import '../widgets/lock_avatar.dart';
@@ -27,7 +21,7 @@ class _VerificationPageState extends State<VerificationPage> {
         MaterialPageRoute(
           builder: (context) => ResetPasswordPage(
             token: _tokenController.text.trim(),
-            email: widget.email, // Pasa el email a la siguiente pantalla
+            email: widget.email,
           ),
         ),
       );

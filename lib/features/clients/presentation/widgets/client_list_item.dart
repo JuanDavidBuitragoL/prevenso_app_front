@@ -1,14 +1,9 @@
-// -------------------------------------------------------------------
 // features/clients/presentation/widgets/client_list_item.dart
-// --- ARCHIVO MODIFICADO ---
 // Se hace interactivo para navegar a la pantalla de detalles.
-
-// ARCHIVO: lib/features/clients/presentation/widgets/client_list_item.dart (VERSIÓN FINAL)
 
 import 'package:flutter/material.dart';
 import '../../domain/entities/client_model.dart';
 
-// --- Lógica para asignar colores e íconos dinámicamente ---
 Color _getColorForClient(String clientName) {
   final hash = clientName.hashCode;
   final colors = [

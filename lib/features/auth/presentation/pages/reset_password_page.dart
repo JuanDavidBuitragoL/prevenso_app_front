@@ -1,9 +1,3 @@
-// =============================================================================
-// ARCHIVO: features/auth/presentation/pages/reset_password_page.dart (VERSIÓN FINAL)
-// FUNCIÓN:   Pantalla final para establecer la nueva contraseña. Ahora recibe
-//            tanto el token como el email para enviarlos al backend.
-// =============================================================================
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
@@ -40,8 +34,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     try {
       final message = await authProvider.resetPassword(
-        widget.email, // Pasa el email
-        widget.token, // Pasa el token
+        widget.email,
+        widget.token,
         _newPasswordController.text,
       );
       if (mounted) {

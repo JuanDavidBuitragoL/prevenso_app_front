@@ -1,4 +1,3 @@
-// ARCHIVO: lib/features/services/domain/entities/service_model.dart
 
 class ServiceModel {
   final int id;

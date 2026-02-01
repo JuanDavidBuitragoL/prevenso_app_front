@@ -1,7 +1,3 @@
-// -------------------------------------------------------------------
-// features/auth/presentation/widgets/lock_avatar.dart
-// Un widget para el avatar con el ícono de candado y círculos decorativos.
-
 import 'dart:math';
 import 'package:flutter/material.dart';
 

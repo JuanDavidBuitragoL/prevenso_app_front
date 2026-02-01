@@ -1,10 +1,6 @@
-// =============================================================================
-// ARCHIVO: lib/features/quotes/domain/entities/quote_model.dart (VERSIÓN CORREGIDA)
-// FUNCIÓN:   Define los modelos de datos para las cotizaciones, incluyendo
-//            todos los campos necesarios para los detalles.
-// =============================================================================
 
-// Modelo para un ítem individual dentro de una cotización
+//            todos los campos necesarios para los detalles.
+
 class QuoteItemModel {
   final int serviceId;
   final String serviceName;
@@ -14,6 +10,7 @@ class QuoteItemModel {
   final double priceBaseUnit;
   final double priceFinalUnit;
   final double subtotal;
+  final double? surcharge; // <-- NUEVO campo para recargo individual
 
   QuoteItemModel({
     required this.serviceId,
@@ -24,6 +21,7 @@ class QuoteItemModel {
     required this.priceBaseUnit,
     required this.priceFinalUnit,
     required this.subtotal,
+    this.surcharge, // <-- NUEVO campo opcional
   });
 
   factory QuoteItemModel.fromJson(Map<String, dynamic> json) {
@@ -32,11 +30,11 @@ class QuoteItemModel {
       serviceName: json['servicio']['nombre_servicio'] ?? 'N/A',
       quantity: json['cantidad'],
       discountType: json['tipo_descuento'],
-      // --- CORRECCIÓN: Se usa double.tryParse para manejar el string de forma segura ---
       discountValue: json['valor_descuento'] != null ? double.tryParse(json['valor_descuento'].toString()) : null,
       priceBaseUnit: double.parse(json['precio_base_unitario'].toString()),
       priceFinalUnit: double.parse(json['precio_final_unitario'].toString()),
       subtotal: double.parse(json['subtotal_item'].toString()),
+      surcharge: json['recargo'] != null ? double.tryParse(json['recargo'].toString()) : null, // <-- NUEVO campo del JSON
     );
   }
 }
@@ -45,19 +43,25 @@ class QuoteItemModel {
 class QuoteModel {
   final int id;
   final String clientName;
+  final int clientId;
   final String userName;
   final DateTime creationDate;
   final String status;
-  final String totalValue;
+  final double totalValue;
+  final String? observations;
+  final double? surcharge;
   final List<QuoteItemModel> items;
 
   QuoteModel({
     required this.id,
     required this.clientName,
+    required this.clientId,
     required this.userName,
     required this.creationDate,
     required this.status,
     required this.totalValue,
+    this.observations,
+    this.surcharge,
     required this.items,
   });
 
@@ -68,10 +72,13 @@ class QuoteModel {
     return QuoteModel(
       id: json['id_cotizacion'],
       clientName: json['cliente']['nombre_cliente'] ?? 'N/A',
+      clientId: json['id_cliente'],
       userName: json['usuario']['nombre_usuario'] ?? 'N/A',
       creationDate: DateTime.parse(json['fecha_creacion']),
       status: json['estado'],
-      totalValue: json['costo_total'],
+      totalValue: double.parse(json['costo_total'].toString()),
+      observations: json['observaciones'],
+      surcharge: json['recargo'] != null ? double.tryParse(json['recargo'].toString()) : 0.0,
       items: parsedItems,
     );
   }

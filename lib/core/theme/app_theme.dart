@@ -1,24 +1,17 @@
-// -------------------------------------------------------------------
-// core/theme/app_theme.dart
-// Define todos los estilos y colores de la aplicación en un solo lugar.
-// Esto asegura una UI consistente y facilita los cambios de diseño.
-
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // --- Colores ---
-  static const Color primaryColor = Color(0xFF4A55A2);
+    static const Color primaryColor = Color(0xFF4A55A2);
   static const Color secondaryColor = Color(0xFF00C6AD);
   static const Color backgroundColor = Colors.white;
   static const Color textColor = Color(0xFF333333);
   static const Color subtleTextColor = Colors.black54;
   static const Color borderColor = Color(0xFFE0E0E0);
 
-  // --- Tema de la Aplicación ---
-  static final ThemeData lightTheme = ThemeData(
+    static final ThemeData lightTheme = ThemeData(
     primaryColor: primaryColor,
     scaffoldBackgroundColor: backgroundColor,
-    fontFamily: 'Inter', // Asegúrate de tener esta fuente en pubspec.yaml
+    fontFamily: 'Inter',
     appBarTheme: const AppBarTheme(
       elevation: 0,
       backgroundColor: backgroundColor,

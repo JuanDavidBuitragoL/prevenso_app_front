@@ -1,17 +1,9 @@
-// =============================================================================
-// ARCHIVO: features/auth/presentation/pages/forgot_password_page.dart (VERSIÓN FINAL)
-// FUNCIÓN:   Pantalla que solicita el envío del código. Ahora es flexible:
-//            - Si recibe un email, lo usa directamente.
-//            - Si no recibe un email, muestra un campo para que el usuario lo escriba.
-// =============================================================================
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import 'verification_page.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
-  // --- CAMBIO CLAVE: El email ahora es opcional ---
   final String? email;
   const ForgotPasswordPage({super.key, this.email});
 
@@ -23,7 +15,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   late TextEditingController _emailController;
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
-  // --- CAMBIO CLAVE: Determina si el email fue pre-cargado ---
   bool get _isEmailProvided => widget.email != null;
 
   @override
@@ -84,16 +75,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // --- CAMBIO CLAVE: Muestra un widget u otro dependiendo del contexto ---
               if (_isEmailProvided)
-              // Caso: Vienes desde el perfil
                 Text(
                   'Se enviará un código de recuperación al correo:\n${widget.email}',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleMedium,
                 )
               else
-              // Caso: Vienes desde el login
                 Column(
                   children: [
                     Text(

@@ -1,4 +1,3 @@
-// ARCHIVO: lib/features/clients/domain/entities/client_model.dart (NUEVO ARCHIVO)
 
 class ClientModel {
   final int id;

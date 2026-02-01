@@ -1,5 +1,3 @@
-// ARCHIVO: lib/features/quotes/presentation/widgets/quote_list_item.dart (VERSIÓN FINAL)
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entities/quote_model.dart';
@@ -24,6 +22,7 @@ class QuoteListItem extends StatelessWidget {
     final Color statusColor = isPending ? Colors.orange : const Color(0xFF00C6AD);
     final String statusText = isPending ? 'Borrador' : 'Creada';
     final IconData statusIcon = isPending ? Icons.edit_note_outlined : Icons.check_circle_outline;
+
     final String formattedDate = DateFormat('dd/MM/yy', 'es_CO').format(quote.creationDate.toLocal());
     final String formattedTime = DateFormat('hh:mm a', 'es_CO').format(quote.creationDate.toLocal());
     final String servicesSummary = quote.items.map((item) => item.serviceName).join(', ');
@@ -60,7 +59,7 @@ class QuoteListItem extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-            isPending ? _buildPendingButtons(context) : _buildFinalizedButton(context),
+            isPending ? _buildPendingButtons(context) : _buildFinalizedButtons(context),
           ],
         ),
       ),
@@ -77,19 +76,35 @@ class QuoteListItem extends StatelessWidget {
     );
   }
 
-  Widget _buildFinalizedButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF27AE60),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          padding: const EdgeInsets.symmetric(vertical: 14),
+  Widget _buildFinalizedButtons(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: onEdit,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF27AE60),
+              side: const BorderSide(color: Color(0xFF27AE60)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+            child: const Text('Editar'),
+          ),
         ),
-        child: const Text('Ver detalles'),
-      ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: onTap,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF27AE60),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+            child: const Text('Ver detalles'),
+          ),
+        ),
+      ],
     );
   }
 
@@ -98,7 +113,7 @@ class QuoteListItem extends StatelessWidget {
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: onDelete, // <-- Conectado al callback
+            onPressed: onDelete,
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.red,
               side: const BorderSide(color: Colors.red),
@@ -111,7 +126,7 @@ class QuoteListItem extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton(
-            onPressed: onEdit, // <-- Conectado al callback
+            onPressed: onEdit,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF27AE60),
               foregroundColor: Colors.white,

@@ -1,4 +1,3 @@
-// -------------------------------------------------------------------
 // features/auth/presentation/widgets/otp_input_field.dart
 // Widget que contiene los 5 campos para el código de verificación.
 

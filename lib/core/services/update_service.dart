@@ -1,8 +1,3 @@
-// =============================================================================
-// ARCHIVO: lib/core/services/update_service.dart
-// FUNCIÓN: Verifica, descarga e instala actualizaciones automáticamente
-// =============================================================================
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -17,13 +12,13 @@ class UpdateService {
 
   UpdateService(this._apiService);
 
-  /// Verifica si hay una actualización disponible
   Future<bool> checkForUpdates() async {
     try {
       final PackageInfo packageInfo = await PackageInfo.fromPlatform();
       final int currentVersionCode = int.parse(packageInfo.buildNumber);
 
-      final Map<String, dynamic> latestVersion = await _apiService.getLatestVersion();
+      final Map<String, dynamic> latestVersion =
+      await _apiService.getLatestVersion();
       final int latestVersionCode = latestVersion['versionCode'] as int;
 
       return latestVersionCode > currentVersionCode;
@@ -33,12 +28,23 @@ class UpdateService {
     }
   }
 
-  /// Muestra un diálogo informando sobre la actualización disponible
   Future<void> showUpdateDialog(BuildContext context) async {
     try {
-      final Map<String, dynamic> latestVersion = await _apiService.getLatestVersion();
+      final Map<String, dynamic> latestVersion =
+      await _apiService.getLatestVersion();
       final String versionName = latestVersion['versionName'] as String;
-      final String downloadUrl = latestVersion['url_android'] as String;
+
+      String? downloadUrl;
+      if (Platform.isAndroid) {
+        downloadUrl = latestVersion['url_android'] as String?;
+      } else if (Platform.isWindows) {
+        downloadUrl = latestVersion['url_windows'] as String?;
+      }
+
+      if (downloadUrl == null || downloadUrl.isEmpty) {
+        debugPrint('No se encontró URL de descarga para esta plataforma.');
+        return;
+      }
 
       if (!context.mounted) return;
 
@@ -116,7 +122,8 @@ class UpdateService {
                   ElevatedButton(
                     onPressed: () {
                       Navigator.of(dialogContext).pop();
-                      _downloadAndInstallApk(context, downloadUrl, versionName);
+                      _downloadAndInstallUpdate(
+                          context, downloadUrl!, versionName);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF4A55A2),
@@ -161,67 +168,33 @@ class UpdateService {
     }
   }
 
-  /// Descarga e instala el APK automáticamente
-  Future<void> _downloadAndInstallApk(
+  Future<void> _downloadAndInstallUpdate(
       BuildContext context,
       String downloadUrl,
       String versionName,
       ) async {
+    if (!context.mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) => _buildDownloadingDialog(0),
+    );
+
     try {
-      // 1. Solicitar permisos de almacenamiento
       if (Platform.isAndroid) {
-        // Para Android 13+ (API 33+) ya no se necesita REQUEST_INSTALL_PACKAGES
-        // pero para versiones anteriores sí
-        final status = await Permission.requestInstallPackages.request();
-        if (!status.isGranted) {
-          if (context.mounted) {
-            _showErrorDialog(
-              context,
-              'Se requiere permiso para instalar aplicaciones de fuentes desconocidas.',
-            );
-          }
-          return;
-        }
+        await _handleAndroidUpdate(context, downloadUrl, versionName);
+      } else if (Platform.isWindows) {
+        await _handleWindowsUpdate(context, downloadUrl, versionName);
+      } else {
+        throw Exception('Plataforma no soportada para actualizaciones.');
       }
 
-      // 2. Mostrar diálogo de progreso
-      if (!context.mounted) return;
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext dialogContext) => _buildDownloadingDialog(0),
-      );
-
-      // 3. Descargar el APK
-      final http.Response response = await http.get(Uri.parse(downloadUrl));
-
-      if (response.statusCode != 200) {
-        throw Exception('Error al descargar: ${response.statusCode}');
-      }
-
-      // 4. Guardar el APK en el almacenamiento local
-      final Directory tempDir = await getTemporaryDirectory();
-      final String filePath = '${tempDir.path}/prevenso_v$versionName.apk';
-      final File file = File(filePath);
-      await file.writeAsBytes(response.bodyBytes);
-
-      // 5. Cerrar diálogo de progreso
-      if (context.mounted) {
+      if (context.mounted && Platform.isAndroid) {
         Navigator.of(context).pop();
       }
-
-      // 6. Abrir el APK para instalarlo
-      final result = await OpenFile.open(filePath);
-
-      if (result.type != ResultType.done) {
-        throw Exception('Error al abrir el instalador: ${result.message}');
-      }
-
     } catch (e) {
-      debugPrint('Error al descargar/instalar APK: $e');
+      debugPrint('Error al descargar/instalar: $e');
 
-      // Cerrar diálogo de progreso si está abierto
       if (context.mounted) {
         Navigator.of(context).pop();
         _showErrorDialog(
@@ -232,7 +205,71 @@ class UpdateService {
     }
   }
 
-  /// Diálogo de progreso de descarga
+  Future<void> _handleAndroidUpdate(
+      BuildContext context, String downloadUrl, String versionName) async {
+    final status = await Permission.requestInstallPackages.request();
+    if (!status.isGranted) {
+      throw Exception('Permiso de instalación denegado.');
+    }
+
+    final http.Response response = await http.get(Uri.parse(downloadUrl));
+    if (response.statusCode != 200) {
+      throw Exception('Error al descargar: ${response.statusCode}');
+    }
+
+    final Directory tempDir = await getTemporaryDirectory();
+    final String filePath = '${tempDir.path}/prevenso_v$versionName.apk';
+    final File file = File(filePath);
+    await file.writeAsBytes(response.bodyBytes);
+
+    final result = await OpenFile.open(filePath);
+    if (result.type != ResultType.done) {
+      throw Exception('Error al abrir el instalador: ${result.message}');
+    }
+  }
+
+  Future<void> _handleWindowsUpdate(
+      BuildContext context, String downloadUrl, String versionName) async {
+    final http.Response response = await http.get(Uri.parse(downloadUrl));
+    if (response.statusCode != 200) {
+      throw Exception('Error al descargar: ${response.statusCode}');
+    }
+
+    final Directory? downloadsDir = await getDownloadsDirectory();
+    if (downloadsDir == null) {
+      throw Exception('No se pudo encontrar el directorio de descargas.');
+    }
+
+    final String filePath = '${downloadsDir.path}/prevenso_v$versionName.zip';
+    final File file = File(filePath);
+    await file.writeAsBytes(response.bodyBytes);
+
+    final result = await OpenFile.open(filePath);
+    if (result.type != ResultType.done) {
+      throw Exception('Error al abrir el archivo ZIP: ${result.message}');
+    }
+
+    if (context.mounted) {
+      Navigator.of(context).pop();
+
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Descarga Completa'),
+          content: Text(
+            'El archivo de actualización se guardó en tu carpeta de Descargas:\n\n$filePath\n\nPor favor, descomprímelo y reemplaza la versión actual.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Aceptar'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   Widget _buildDownloadingDialog(double progress) {
     return AlertDialog(
       content: Column(
@@ -262,7 +299,6 @@ class UpdateService {
     );
   }
 
-  /// Muestra un diálogo de error
   void _showErrorDialog(BuildContext context, String message) {
     showDialog(
       context: context,
@@ -287,7 +323,6 @@ class UpdateService {
     );
   }
 
-  /// Verifica y muestra el diálogo si hay actualización
   Future<void> checkAndShowUpdateDialog(BuildContext context) async {
     final bool hasUpdate = await checkForUpdates();
     if (hasUpdate && context.mounted) {

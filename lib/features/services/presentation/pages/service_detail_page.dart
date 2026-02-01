@@ -1,6 +1,4 @@
-// -------------------------------------------------------------------
 // features/services/presentation/pages/service_detail_page.dart
-// --- NUEVO ARCHIVO ---
 // La pantalla para ver los detalles de un servicio específico.
 
 import 'package:flutter/material.dart';

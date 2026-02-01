@@ -1,8 +1,5 @@
-// =============================================================================
-// ARCHIVO: features/rates/presentation/pages/rates_page.dart (CORRECCIÓN FINAL)
-// FUNCIÓN:   Integra la lógica de estado (búsqueda, carga de datos) con un
+
 //            diseño de cuadrícula completamente responsivo para móvil y escritorio.
-// =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -42,6 +39,18 @@ class _RatesPageState extends State<RatesPage> {
     _searchController.removeListener(_filterRates);
     _searchController.dispose();
     super.dispose();
+  }
+
+  // Función para remover acentos y normalizar texto
+  String _removeAccents(String text) {
+    const accents = 'ÀÁÂÃÄÅàáâãäåÒÓÔÕÖØòóôõöøÈÉÊËèéêëÌÍÎÏìíîïÙÚÛÜùúûüÿÑñÇç';
+    const withoutAccents = 'AAAAAAaaaaaaOOOOOOooooooEEEEeeeeIIIIiiiiUUUUuuuuyNnCc';
+
+    String result = text;
+    for (int i = 0; i < accents.length; i++) {
+      result = result.replaceAll(accents[i], withoutAccents[i]);
+    }
+    return result;
   }
 
   Future<void> _fetchRates() async {
@@ -84,11 +93,11 @@ class _RatesPageState extends State<RatesPage> {
   }
 
   void _filterRates() {
-    final query = _searchController.text.toLowerCase();
+    final query = _removeAccents(_searchController.text.toLowerCase());
     setState(() {
       _filteredRates = _allRates.where((rate) {
-        final serviceNameMatch = rate.nombreServicio.toLowerCase().contains(query);
-        final cityMatch = rate.ciudad.toLowerCase().contains(query);
+        final serviceNameMatch = _removeAccents(rate.nombreServicio.toLowerCase()).contains(query);
+        final cityMatch = _removeAccents(rate.ciudad.toLowerCase()).contains(query);
         return serviceNameMatch || cityMatch;
       }).toList();
     });
@@ -213,8 +222,7 @@ class _RatesPageState extends State<RatesPage> {
       );
     }
 
-    // --- LÓGICA RESPONSIVA INTEGRADA ---
-    return LayoutBuilder(
+        return LayoutBuilder(
       builder: (context, constraints) {
         // En pantallas anchas (PC), las tarjetas serán más anchas que altas (rectangulares).
         // En pantallas estrechas (móvil), serán más altas que anchas (casi cuadradas).
@@ -242,4 +250,3 @@ class _RatesPageState extends State<RatesPage> {
     );
   }
 }
-

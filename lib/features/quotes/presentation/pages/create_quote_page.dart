@@ -1,5 +1,4 @@
-// --- PASO 2.1: Refactorizar CreateQuotePage para ser dinámica y funcional ---
-// ARCHIVO: lib/features/quotes/presentation/pages/create_quote_page.dart (VERSIÓN FINAL)
+// VERSIÓN: V2.1 (Recargos por Ítem)
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -11,10 +10,8 @@ import '../../../../core/services/api_service.dart';
 import '../../../clients/domain/entities/client_model.dart';
 import '../../../rates/domain/entities/rate_model.dart';
 
-// --- ENUM para el tipo de descuento ---
 enum DiscountType { porcentaje, fijo }
 
-// Modelo para manejar los ítems seleccionados en la UI
 class SelectedItem {
   final int serviceId;
   final String serviceName;
@@ -22,6 +19,7 @@ class SelectedItem {
   int quantity;
   DiscountType? discountType;
   double? discountValue;
+  double surcharge; // <--- NUEVO: Recargo específico para este ítem
 
   SelectedItem({
     required this.serviceId,
@@ -30,9 +28,9 @@ class SelectedItem {
     this.quantity = 1,
     this.discountType,
     this.discountValue,
+    this.surcharge = 0.0, // Por defecto 0
   });
 
-  // Calcula el precio final de una unidad después del descuento
   double get finalUnitPrice {
     if (discountType == null || discountValue == null || discountValue == 0) {
       return unitPrice;
@@ -46,8 +44,8 @@ class SelectedItem {
     return unitPrice;
   }
 
-  // Calcula el subtotal del ítem (precio final * cantidad)
-  double get subtotal => finalUnitPrice * quantity;
+  // El subtotal ahora suma el recargo individual
+  double get subtotal => (finalUnitPrice * quantity) + surcharge;
 }
 
 class CreateQuotePage extends StatefulWidget {
@@ -61,12 +59,13 @@ class _CreateQuotePageState extends State<CreateQuotePage> {
   final _formKey = GlobalKey<FormState>();
   final ApiService _apiService = ApiService();
 
-  // Estado del formulario
   ClientModel? _selectedClient;
   String? _selectedCity;
   final List<SelectedItem> _selectedItems = [];
   double _totalValue = 0.0;
   bool _isLoading = false;
+
+    final TextEditingController _observationsController = TextEditingController();
 
   List<ClientModel> _availableClients = [];
   List<RateModel> _availableRates = [];
@@ -76,6 +75,12 @@ class _CreateQuotePageState extends State<CreateQuotePage> {
   void initState() {
     super.initState();
     _fetchInitialData();
+  }
+
+  @override
+  void dispose() {
+    _observationsController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchInitialData() async {
@@ -137,17 +142,19 @@ class _CreateQuotePageState extends State<CreateQuotePage> {
   void _calculateTotal() {
     double total = 0;
     for (var item in _selectedItems) {
-      total += item.subtotal; // Usamos el subtotal que ya considera el descuento
+      total += item.subtotal; // Suma subtotales que ya incluyen sus recargos
     }
     _totalValue = total;
   }
 
-  // --- Muestra el diálogo para añadir/editar un descuento ---
-  void _showDiscountDialog(int index) {
+    void _showPriceAdjustmentDialog(int index) {
     final item = _selectedItems[index];
-    final valueController = TextEditingController(text: item.discountValue?.toStringAsFixed(0) ?? '');
-    DiscountType? currentDiscountType = item.discountType;
 
+    // Controladores
+    final discountController = TextEditingController(text: item.discountValue?.toStringAsFixed(0) ?? '');
+    final surchargeController = TextEditingController(text: item.surcharge > 0 ? item.surcharge.toStringAsFixed(0) : '');
+
+    DiscountType? currentDiscountType = item.discountType ?? DiscountType.porcentaje;
     List<bool> isSelected = [
       currentDiscountType == DiscountType.porcentaje,
       currentDiscountType == DiscountType.fijo,
@@ -160,91 +167,116 @@ class _CreateQuotePageState extends State<CreateQuotePage> {
           builder: (context, setDialogState) {
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: Column(
-                children: [
-                  const Icon(Icons.sell_outlined, size: 32, color: AppTheme.primaryColor),
-                  const SizedBox(height: 8),
-                  const Text('Aplicar Descuento', textAlign: TextAlign.center),
-                  Text(
-                    item.serviceName,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal, color: AppTheme.subtleTextColor),
-                  ),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ToggleButtons(
-                    isSelected: isSelected,
-                    onPressed: (int newIndex) {
-                      setDialogState(() {
-                        for (int i = 0; i < isSelected.length; i++) {
-                          isSelected[i] = i == newIndex;
-                        }
-                        currentDiscountType = newIndex == 0 ? DiscountType.porcentaje : DiscountType.fijo;
-                      });
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    selectedColor: Colors.white,
-                    fillColor: AppTheme.primaryColor,
-                    color: AppTheme.primaryColor,
-                    constraints: const BoxConstraints(minHeight: 40.0, minWidth: 100.0),
-                    children: const [
-                      Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Porcentaje')),
-                      Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Monto Fijo')),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  TextFormField(
-                    controller: valueController,
-                    decoration: _inputDecoration().copyWith(
-                      labelText: 'Valor del descuento',
-                      prefixIcon: currentDiscountType == DiscountType.fijo ? const Icon(Icons.attach_money) : null,
-                      suffixIcon: currentDiscountType == DiscountType.porcentaje ? const Icon(Icons.percent) : null,
+              title: const Text('Ajustar Precio', textAlign: TextAlign.center),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Text(
+                        item.serviceName,
+                        style: const TextStyle(fontSize: 13, color: Colors.grey),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ],
+                    const Divider(height: 30),
+
+                                        const Text('Descuento', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                    const SizedBox(height: 10),
+                    Center(
+                      child: ToggleButtons(
+                        isSelected: isSelected,
+                        onPressed: (int newIndex) {
+                          setDialogState(() {
+                            for (int i = 0; i < isSelected.length; i++) {
+                              isSelected[i] = i == newIndex;
+                            }
+                            currentDiscountType = newIndex == 0 ? DiscountType.porcentaje : DiscountType.fijo;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        selectedColor: Colors.white,
+                        fillColor: Colors.green,
+                        color: Colors.green,
+                        children: const [
+                          Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('%')),
+                          Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('\$')),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: discountController,
+                      decoration: _inputDecoration().copyWith(
+                        labelText: 'Valor a descontar',
+                        prefixIcon: const Icon(Icons.remove_circle_outline, color: Colors.green),
+                        isDense: true,
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+
+                    const SizedBox(height: 25),
+
+                                        const Text('Recargo / Adicional', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: surchargeController,
+                      decoration: _inputDecoration().copyWith(
+                        labelText: 'Valor extra (Viáticos, etc.)',
+                        prefixIcon: const Icon(Icons.add_circle_outline, color: Colors.orange),
+                        suffixText: 'COP',
+                        isDense: true,
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
+                ),
               ),
-              actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              actionsPadding: const EdgeInsets.all(16),
               actions: [
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {
+                          // Limpiar todo
                           setState(() {
                             _selectedItems[index].discountType = null;
                             _selectedItems[index].discountValue = null;
+                            _selectedItems[index].surcharge = 0.0;
                             _calculateTotal();
                           });
                           Navigator.of(context).pop();
                         },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('Quitar'),
+                        style: OutlinedButton.styleFrom(foregroundColor: Colors.grey),
+                        child: const Text('Limpiar'),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
                           setState(() {
-                            _selectedItems[index].discountType = currentDiscountType;
-                            _selectedItems[index].discountValue = double.tryParse(valueController.text) ?? 0.0;
+                            // Guardar Descuento
+                            double dVal = double.tryParse(discountController.text) ?? 0.0;
+                            if (dVal > 0) {
+                              _selectedItems[index].discountType = currentDiscountType;
+                              _selectedItems[index].discountValue = dVal;
+                            } else {
+                              _selectedItems[index].discountType = null;
+                              _selectedItems[index].discountValue = null;
+                            }
+
+                            // Guardar Recargo
+                            _selectedItems[index].surcharge = double.tryParse(surchargeController.text) ?? 0.0;
+
                             _calculateTotal();
                           });
                           Navigator.of(context).pop();
                         },
-                        style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('Guardar'),
+                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
+                        child: const Text('Aplicar'),
                       ),
                     ),
                   ],
@@ -258,15 +290,9 @@ class _CreateQuotePageState extends State<CreateQuotePage> {
   }
 
   Future<void> _submitQuote(String status) async {
-    if (!(_formKey.currentState?.validate() ?? false) ||
-        _selectedItems.isEmpty) {
+    if (!(_formKey.currentState?.validate() ?? false) || _selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Por favor, selecciona un cliente y añade al menos un servicio.',
-          ),
-          backgroundColor: Colors.orange,
-        ),
+        const SnackBar(content: Text('Por favor, selecciona un cliente y añade al menos un servicio.'), backgroundColor: Colors.orange),
       );
       return;
     }
@@ -275,17 +301,19 @@ class _CreateQuotePageState extends State<CreateQuotePage> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.token == null || authProvider.user == null) return;
 
-    // --- Lógica de envío para incluir descuentos ---
     final quoteData = {
       'id_usuario': authProvider.user!.id,
       'id_cliente': _selectedClient!.id,
       'ciudad': _selectedCity!,
       'estado': status,
+      'observaciones': _observationsController.text, // Solo observaciones global
+      // 'recargo': ... ELIMINADO GLOBAL
       'items': _selectedItems.map((item) => {
         'id_servicio': item.serviceId,
         'cantidad': item.quantity,
-        'tipo_descuento': item.discountType?.name, // 'porcentaje' o 'fijo'
+        'tipo_descuento': item.discountType?.name,
         'valor_descuento': item.discountValue,
+        'recargo': item.surcharge, // <--- EL RECARGO VA AQUÍ AHORA
       }).toList(),
     };
 
@@ -303,7 +331,7 @@ class _CreateQuotePageState extends State<CreateQuotePage> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-  // --- Abre la pantalla de búsqueda de tarifas ---
+
   Future<void> _openRateSearch() async {
     if (_selectedCity == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -314,7 +342,6 @@ class _CreateQuotePageState extends State<CreateQuotePage> {
 
     final ratesForSelectedCity = _availableRates.where((r) => r.ciudad == _selectedCity).toList();
 
-    // Navegamos a la nueva pantalla de búsqueda y esperamos a que nos devuelva una tarifa
     final RateModel? selectedRate = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -322,24 +349,14 @@ class _CreateQuotePageState extends State<CreateQuotePage> {
       ),
     );
 
-    // Si el usuario seleccionó una tarifa, la añadimos a la lista
     if (selectedRate != null) {
       _addItem(selectedRate);
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
-    final ratesForSelectedCity = _selectedCity == null
-        ? <RateModel>[]
-        : _availableRates.where((r) => r.ciudad == _selectedCity).toList();
-
-    final currencyFormatter = NumberFormat.currency(
-      locale: 'es_CO',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
+    final currencyFormatter = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
 
     return Scaffold(
       appBar: AppBar(
@@ -355,63 +372,33 @@ class _CreateQuotePageState extends State<CreateQuotePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Nueva cotización',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF00C6AD),
-                  ),
-                ),
+                const Text('Nueva cotización', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF00C6AD))),
                 const SizedBox(height: 30),
 
-                // --- Dropdown de Cliente ---
                 _buildSectionTitle('Cliente*'),
                 DropdownButtonFormField<ClientModel>(
                   isExpanded: true,
-                  // <-- Buena práctica añadirlo aquí también
                   value: _selectedClient,
                   hint: const Text('Seleccione un cliente'),
-                  items: _availableClients
-                      .map(
-                        (client) => DropdownMenuItem(
-                          value: client,
-                          child: Text(
-                            client.nombre,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (client) =>
-                      setState(() => _selectedClient = client),
-                  validator: (value) =>
-                      value == null ? 'Seleccione un cliente' : null,
+                  items: _availableClients.map((client) => DropdownMenuItem(value: client, child: Text(client.nombre, overflow: TextOverflow.ellipsis))).toList(),
+                  onChanged: (client) => setState(() => _selectedClient = client),
+                  validator: (value) => value == null ? 'Seleccione un cliente' : null,
                   decoration: _inputDecoration(),
                 ),
                 const SizedBox(height: 20),
 
-                // --- Dropdown de Ciudad ---
                 _buildSectionTitle('Ciudad*'),
                 DropdownButtonFormField<String>(
                   isExpanded: true,
-                  // <-- Buena práctica añadirlo aquí también
                   value: _selectedCity,
                   hint: const Text('Seleccione una ciudad'),
-                  items: _availableCities
-                      .map(
-                        (city) =>
-                            DropdownMenuItem(value: city, child: Text(city)),
-                      )
-                      .toList(),
+                  items: _availableCities.map((city) => DropdownMenuItem(value: city, child: Text(city))).toList(),
                   onChanged: (city) => setState(() => _selectedCity = city),
-                  validator: (value) =>
-                      value == null ? 'Seleccione una ciudad' : null,
+                  validator: (value) => value == null ? 'Seleccione una ciudad' : null,
                   decoration: _inputDecoration(),
                 ),
                 const SizedBox(height: 20),
 
-                // --- Dropdown de Servicio  ---
                 _buildSectionTitle('Añadir Servicio'),
                 InkWell(
                   onTap: _openRateSearch,
@@ -442,13 +429,24 @@ class _CreateQuotePageState extends State<CreateQuotePage> {
                       onRemove: () => _removeItem(index),
                       onIncrement: () => _updateQuantity(index, 1),
                       onDecrement: () => _updateQuantity(index, -1),
-                      onDiscount: () => _showDiscountDialog(index),
+                      onAdjustPrice: () => _showPriceAdjustmentDialog(index), // <--- NUEVO CALLBACK
                     );
                   },
                 ),
                 const SizedBox(height: 20),
 
-                _buildSectionTitle('Valor total'),
+                                _buildSectionTitle('Observaciones'),
+                TextFormField(
+                  controller: _observationsController,
+                  maxLines: 3,
+                  decoration: _inputDecoration().copyWith(
+                    hintText: 'Escriba aquí notas importantes...',
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                                _buildSectionTitle('Valor total'),
                 TextFormField(
                   controller: TextEditingController(
                     text: currencyFormatter.format(_totalValue),
@@ -457,49 +455,31 @@ class _CreateQuotePageState extends State<CreateQuotePage> {
                   decoration: _inputDecoration().copyWith(
                     filled: true,
                     fillColor: Colors.grey.shade100,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12.0),
+                      borderSide: const BorderSide(color: Color(0xFF00C6AD), width: 2),
+                    ),
                   ),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 const SizedBox(height: 40),
 
+                // Botones Guardar...
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : () => _submitQuote('creada'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF27AE60),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30.0),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            'Generar cotización',
-                            style: TextStyle(fontSize: 16),
-                          ),
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF27AE60), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30.0))),
+                    child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Generar cotización', style: TextStyle(fontSize: 16)),
                   ),
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _isLoading
-                        ? null
-                        : () => _submitQuote('borrador'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2F54EB),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30.0),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            'Guardar y salir',
-                            style: TextStyle(fontSize: 16),
-                          ),
+                    onPressed: _isLoading ? null : () => _submitQuote('borrador'),
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2F54EB), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30.0))),
+                    child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Guardar y salir', style: TextStyle(fontSize: 16)),
                   ),
                 ),
               ],
@@ -513,10 +493,7 @@ class _CreateQuotePageState extends State<CreateQuotePage> {
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        title,
-        style: const TextStyle(color: Colors.black54, fontSize: 16),
-      ),
+      child: Text(title, style: const TextStyle(color: Colors.black54, fontSize: 16)),
     );
   }
 
@@ -533,20 +510,21 @@ class _TariffListItem extends StatelessWidget {
   final VoidCallback onRemove;
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
-  final VoidCallback onDiscount;
+  final VoidCallback onAdjustPrice; // <--- Renombrado de onDiscount
 
   const _TariffListItem({
     required this.item,
     required this.onRemove,
     required this.onIncrement,
     required this.onDecrement,
-    required this.onDiscount,
+    required this.onAdjustPrice,
   });
 
   @override
   Widget build(BuildContext context) {
     final currencyFormatter = NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0);
-    final hasDiscount = item.discountType != null && item.discountValue != null && item.discountValue! > 0;
+    // Verificamos si tiene descuento O recargo para mostrar el detalle
+    final hasAdjustments = (item.discountType != null && item.discountValue != null && item.discountValue! > 0) || item.surcharge > 0;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
@@ -562,35 +540,62 @@ class _TariffListItem extends StatelessWidget {
             Row(
               children: [
                 IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), onPressed: onRemove),
-                Expanded(child: Text(item.serviceName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+                Expanded(child: Text(item.serviceName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
                 IconButton(icon: const Icon(Icons.remove_circle_outline), onPressed: onDecrement),
                 Text(item.quantity.toString(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 IconButton(icon: const Icon(Icons.add_circle_outline), onPressed: onIncrement),
-                // --- NUEVO BOTÓN PARA DESCUENTOS ---
+                // Botón de ajuste de precio (Etiqueta si tiene cambios)
                 IconButton(
-                  icon: Icon(Icons.sell_outlined, color: hasDiscount ? Colors.blue : Colors.grey),
-                  onPressed: onDiscount,
+                  icon: Icon(Icons.price_change_outlined, color: hasAdjustments ? Colors.blue : Colors.grey),
+                  onPressed: onAdjustPrice,
+                  tooltip: "Ajustar precio / Recargo",
                 ),
               ],
             ),
-            // --- Muestra el detalle del precio y descuento ---
-            if (hasDiscount)
+                        if (hasAdjustments)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: Column(
                   children: [
+                    const Divider(),
+                    // 1. Precio Base
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Precio Base:'),
-                        Text(currencyFormatter.format(item.unitPrice), style: const TextStyle(decoration: TextDecoration.lineThrough)),
+                        const Text('Precio Base:', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        Text(currencyFormatter.format(item.unitPrice), style: const TextStyle(color: Colors.grey, fontSize: 12)),
                       ],
                     ),
+                    // 2. Descuento (Si hay)
+                    if (item.discountValue != null && item.discountValue! > 0)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Descuento:', style: TextStyle(color: Colors.green, fontSize: 12)),
+                          Text(
+                            item.discountType == DiscountType.porcentaje
+                                ? '-${item.discountValue}%'
+                                : '-${currencyFormatter.format(item.discountValue)}',
+                            style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    // 3. Recargo (Si hay)
+                    if (item.surcharge > 0)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Recargo:', style: TextStyle(color: Colors.orange, fontSize: 12)),
+                          Text('+${currencyFormatter.format(item.surcharge)}', style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12)),
+                        ],
+                      ),
+                    // 4. Subtotal Final del Ítem
+                    const SizedBox(height: 4),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Precio Final:'),
-                        Text(currencyFormatter.format(item.finalUnitPrice), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                        const Text('Subtotal Ítem:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(currencyFormatter.format(item.subtotal), style: const TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ],

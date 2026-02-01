@@ -1,5 +1,3 @@
-// ARCHIVO: lib/features/auth/domain/entities/user_model.dart (NUEVO ARCHIVO)
-
 class UserModel {
   final int id;
   String nombre_usuario;

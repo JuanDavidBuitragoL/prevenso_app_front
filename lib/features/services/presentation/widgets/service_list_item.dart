@@ -1,13 +1,8 @@
-// =============================================================================
-// ARCHIVO: features/services/presentation/widgets/service_list_item.dart (VERSIÓN CORREGIDA)
-// FUNCIÓN:   Componente visual para un ítem de la lista de servicios. Ahora
 //            acepta los callbacks 'onTap' y 'onEdit' en su constructor.
-// =============================================================================
 
 import 'package:flutter/material.dart';
 import '../../domain/entities/service_model.dart';
 
-// --- Lógica para asignar colores e íconos dinámicamente ---
 Color _getColorForServiceType(String type) {
   switch (type.toLowerCase()) {
     case 'curso':
@@ -39,8 +34,7 @@ class ServiceListItem extends StatelessWidget {
   final VoidCallback onTap;  // <-- Parámetro para ir a detalles
   final VoidCallback onEdit; // <-- Parámetro para ir a editar
 
-  // --- CONSTRUCTOR CORREGIDO ---
-  // Ahora se definen los parámetros 'onTap' y 'onEdit' para que puedan ser recibidos.
+    // Ahora se definen los parámetros 'onTap' y 'onEdit' para que puedan ser recibidos.
   const ServiceListItem({
     super.key,
     required this.service,

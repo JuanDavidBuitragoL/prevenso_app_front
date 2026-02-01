@@ -1,4 +1,3 @@
-// ARCHIVO: lib/features/clients/presentation/pages/create_client_page.dart (VERSIÓN FINAL)
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -35,8 +34,7 @@ class _CreateClientPageState extends State<CreateClientPage> {
     super.dispose();
   }
 
-  // --- Lógica para crear el nuevo cliente en el backend ---
-  Future<void> _createClient() async {
+    Future<void> _createClient() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);

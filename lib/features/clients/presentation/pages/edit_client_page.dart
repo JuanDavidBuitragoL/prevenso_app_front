@@ -1,4 +1,3 @@
-// ARCHIVO: lib/features/clients/presentation/pages/edit_client_page.dart (VERSIÓN FINAL)
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -50,8 +49,7 @@ class _EditClientPageState extends State<EditClientPage> {
     super.dispose();
   }
 
-  // --- Lógica para guardar los cambios en el backend ---
-  Future<void> _saveChanges() async {
+    Future<void> _saveChanges() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);

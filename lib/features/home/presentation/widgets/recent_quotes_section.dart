@@ -1,4 +1,3 @@
-// ARCHIVO: lib/features/home/presentation/widgets/recent_quotes_section.dart (VERSIÓN FINAL)
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -16,9 +15,14 @@ class RecentQuotesSection extends StatefulWidget {
   State<RecentQuotesSection> createState() => _RecentQuotesSectionState();
 }
 
-class _RecentQuotesSectionState extends State<RecentQuotesSection> {
+class _RecentQuotesSectionState extends State<RecentQuotesSection>
+    with AutomaticKeepAliveClientMixin {
+
   final ApiService _apiService = ApiService();
   late Future<List<QuoteModel>> _quotesFuture;
+
+  @override
+  bool get wantKeepAlive => false; // No mantener el estado cuando no es visible
 
   @override
   void initState() {
@@ -26,24 +30,53 @@ class _RecentQuotesSectionState extends State<RecentQuotesSection> {
     _fetchRecentQuotes();
   }
 
+  // 🔄 Este método se llama cada vez que la pantalla vuelve a ser visible
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Recargar las cotizaciones cada vez que la pantalla se muestra
+    _fetchRecentQuotes();
+  }
+
   void _fetchRecentQuotes() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.token != null) {
-      // Llamamos a la API para obtener todas las cotizaciones
-      _quotesFuture = _apiService.getQuotes(authProvider.token!);
+      setState(() {
+        _quotesFuture = _apiService.getQuotes(authProvider.token!);
+      });
     } else {
-      _quotesFuture = Future.error('Error de autenticación');
+      setState(() {
+        _quotesFuture = Future.error('Error de autenticación');
+      });
     }
+  }
+
+  // 🔄 Método público para refrescar manualmente (opcional)
+  void refresh() {
+    _fetchRecentQuotes();
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Requerido por AutomaticKeepAliveClientMixin
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Cotizaciones recientes',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Cotizaciones recientes',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            // Botón de refresh manual (opcional)
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Color(0xFF4A55A2)),
+              onPressed: _fetchRecentQuotes,
+              tooltip: 'Actualizar',
+            ),
+          ],
         ),
         const SizedBox(height: 20),
         // Usamos un FutureBuilder para manejar los estados de la llamada a la API
@@ -51,13 +84,55 @@ class _RecentQuotesSectionState extends State<RecentQuotesSection> {
           future: _quotesFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4A55A2)),
+                  ),
+                ),
+              );
             }
             if (snapshot.hasError) {
-              return Center(child: Text('Error al cargar cotizaciones: ${snapshot.error}'));
+              return Center(
+                child: Column(
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Error al cargar cotizaciones',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    TextButton(
+                      onPressed: _fetchRecentQuotes,
+                      child: const Text('Reintentar'),
+                    ),
+                  ],
+                ),
+              );
             }
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text('Aún no hay cotizaciones.'));
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    children: [
+                      Icon(Icons.receipt_long_outlined,
+                        size: 64,
+                        color: Colors.grey[300],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Aún no hay cotizaciones',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
             }
 
             // Tomamos solo las 2 cotizaciones más recientes para mostrar
@@ -69,11 +144,16 @@ class _RecentQuotesSectionState extends State<RecentQuotesSection> {
                   padding: const EdgeInsets.only(bottom: 15.0),
                   child: _QuoteCard(
                     quote: quote,
-                    onPressed: () {
-                      Navigator.push(
+                    onPressed: () async {
+                      // Navegar y esperar a que regrese
+                      await Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => QuoteDetailPage(quote: quote)),
+                        MaterialPageRoute(
+                          builder: (context) => QuoteDetailPage(quote: quote),
+                        ),
                       );
+                      // Refrescar cuando regrese (por si se editó o eliminó)
+                      _fetchRecentQuotes();
                     },
                   ),
                 );
@@ -84,12 +164,14 @@ class _RecentQuotesSectionState extends State<RecentQuotesSection> {
         const SizedBox(height: 20),
         Center(
           child: TextButton(
-            onPressed: () {
-              // Navega a la página que muestra TODAS las cotizaciones
-              Navigator.push(
+            onPressed: () async {
+              // Navegar a la página de todas las cotizaciones
+              await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const QuotesPage()),
               );
+              // Refrescar cuando regrese
+              _fetchRecentQuotes();
             },
             child: const Text(
               'Ver todas',
@@ -107,7 +189,6 @@ class _RecentQuotesSectionState extends State<RecentQuotesSection> {
   }
 }
 
-// --- El widget _QuoteCard ahora usa el QuoteModel ---
 class _QuoteCard extends StatelessWidget {
   final QuoteModel quote;
   final VoidCallback onPressed;

@@ -1,8 +1,4 @@
-// =============================================================================
-// ARCHIVO: lib/features/quotes/presentation/pages/quotes_page.dart (VERSIÓN FINAL)
-// FUNCIÓN:   Pantalla principal que lista todas las cotizaciones, maneja la carga
 //            de datos y el refresco automático después de una acción.
-// =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -44,8 +40,7 @@ class _QuotesPageState extends State<QuotesPage> {
     }
   }
 
-  // --- Lógica para eliminar una cotización ---
-  Future<void> _deleteQuote(int quoteId) async {
+    Future<void> _deleteQuote(int quoteId) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.token == null) return;
 
@@ -81,8 +76,7 @@ class _QuotesPageState extends State<QuotesPage> {
     }
   }
 
-  // --- Lógica para navegar a la página de edición ---
-  void _navigateToEdit(QuoteModel quote) async {
+    void _navigateToEdit(QuoteModel quote) async {
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (context) => EditQuotePage(quote: quote)),
