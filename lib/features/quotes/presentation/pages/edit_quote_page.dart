@@ -34,19 +34,19 @@ class SelectedItem {
   });
 
   double get finalUnitPrice {
+    double base;
     if (discountType == null || discountValue == null || discountValue == 0) {
-      return unitPrice;
+      base = unitPrice;
+    } else if (discountType == DiscountType.fijo) {
+      base = (unitPrice - discountValue!) > 0 ? (unitPrice - discountValue!) : 0;
+    } else { // porcentaje
+      base = unitPrice * (1 - (discountValue! / 100));
     }
-    if (discountType == DiscountType.fijo) {
-      return (unitPrice - discountValue!) > 0 ? (unitPrice - discountValue!) : 0;
-    }
-    if (discountType == DiscountType.porcentaje) {
-      return unitPrice * (1 - (discountValue! / 100));
-    }
-    return unitPrice;
+
+    return base + surcharge;
   }
 
-  double get subtotal => (finalUnitPrice * quantity) + surcharge;
+  double get subtotal => finalUnitPrice * quantity;
 }
 
 class EditQuotePage extends StatefulWidget {

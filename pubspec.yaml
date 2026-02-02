@@ -1,9 +1,9 @@
 name: prevenso_app_front
-description: "A new Flutter project."
+description: "Aplicacion para realizar cotizaciones de Grupo Prevenso"
 
 publish_to: 'none'
 
-version: 2.0.1+1
+version: 2.0.1+6
 
 environment:
   sdk: '>=3.4.0 <4.0.0'

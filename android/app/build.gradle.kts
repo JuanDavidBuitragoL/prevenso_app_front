@@ -40,8 +40,12 @@ android {
         targetSdk = 36
         versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName
-        multiDexEnabled = true
+
+        ndk {
+            abiFilters += listOf("arm64-v8a")
+        }
     }
+
 
     buildTypes {
         release {
